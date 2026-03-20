@@ -395,7 +395,7 @@ async function runSweepCycle() {
 
 // === Startup ===
 async function start() {
-  const port = config.port;
+  const port = process.env.PORT || config.port;
 
   console.log(`
   ╔══════════════════════════════════════════════╗
@@ -411,7 +411,7 @@ async function start() {
   ╚══════════════════════════════════════════════╝
   `);
 
-  const server = app.listen(port);
+  const server = app.listen(port, '0.0.0.0');
 
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
