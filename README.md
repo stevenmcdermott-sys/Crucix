@@ -247,6 +247,25 @@ Crucix still works with zero API keys. 18+ sources require no authentication at 
 
 ---
 
+## NotebookLM Integration
+
+[NotebookLM](https://notebooklm.google.com/) can be used to analyze Crucix sweep outputs, briefing JSON, or exported intelligence reports.
+
+### Installation
+
+```bash
+# Basic installation
+pip install notebooklm-py
+
+# With browser login support (required for first-time setup)
+pip install "notebooklm-py[chrome]"
+playwright install chromium
+```
+
+Browser login is required the first time to authenticate with your Google account. After that, `notebooklm-py` can run headlessly.
+
+---
+
 ## Architecture
 
 ```
