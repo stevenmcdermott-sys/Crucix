@@ -1,5 +1,5 @@
-﻿#!/usr/bin/env node
-// DDN Intelligence Platform — Dev Server
+#!/usr/bin/env node
+// Crucix Intelligence Engine — Dev Server
 // Serves the Jarvis dashboard, runs sweep cycle, pushes live updates via SSE
 
 import express from 'express';
@@ -62,7 +62,7 @@ if (telegramAlerter.isConfigured) {
       : 'pending';
 
     return [
-      `🖥️ *DDN STATUS*`,
+      `🖥️ *CRUCIX STATUS*`,
       ``,
       `Uptime: ${h}h ${m}m`,
       `Last sweep: ${lastSweepTime ? new Date(lastSweepTime).toLocaleTimeString() + ' UTC' : 'never'}`,
@@ -91,7 +91,7 @@ if (telegramAlerter.isConfigured) {
     const ideas = (currentData.ideas || []).slice(0, 3);
 
     const sections = [
-      `📋 *DDN BRIEF*`,
+      `📋 *CRUCIX BRIEF*`,
       `_${new Date().toISOString().replace('T', ' ').substring(0, 19)} UTC_`,
       ``,
     ];
@@ -159,7 +159,7 @@ if (discordAlerter.isConfigured) {
       : 'pending';
 
     return [
-      `**🖥️ DDN STATUS**\n`,
+      `**🖥️ CRUCIX STATUS**\n`,
       `Uptime: ${h}h ${m}m`,
       `Last sweep: ${lastSweepTime ? new Date(lastSweepTime).toLocaleTimeString() + ' UTC' : 'never'}`,
       `Next sweep: ${nextSweep} UTC`,
@@ -185,7 +185,7 @@ if (discordAlerter.isConfigured) {
     const delta = memory.getLastDelta();
     const ideas = (currentData.ideas || []).slice(0, 3);
 
-    const sections = [`**📋 DDN BRIEF**\n_${new Date().toISOString().replace('T', ' ').substring(0, 19)} UTC_\n`];
+    const sections = [`**📋 CRUCIX BRIEF**\n_${new Date().toISOString().replace('T', ' ').substring(0, 19)} UTC_\n`];
 
     if (delta?.summary) {
       const dirEmoji = { 'risk-off': '📉', 'risk-on': '📈', 'mixed': '↔️' }[delta.summary.direction] || '↔️';
@@ -242,7 +242,7 @@ app.get('/', (req, res) => {
     
     // Inject locale data into the HTML
     const locale = getLocale();
-    const localeScript = `<script>window.__DDN_LOCALE__ = ${JSON.stringify(locale).replace(/<\/script>/gi, '<\\/script>')};</script>`;
+    const localeScript = `<script>window.__CRUCIX_LOCALE__ = ${JSON.stringify(locale).replace(/<\/script>/gi, '<\\/script>')};</script>`;
     html = html.replace('</head>', `${localeScript}\n</head>`);
     
     res.type('html').send(html);
@@ -399,8 +399,8 @@ async function start() {
 
   console.log(`
   ╔══════════════════════════════════════════════╗
-  ║           DDN INTELLIGENCE PLATFORM         ║
-  ║          DDN Intelligence · 26 Sources         ║
+  ║           CRUCIX INTELLIGENCE ENGINE         ║
+  ║          Local Palantir · 26 Sources         ║
   ╠══════════════════════════════════════════════╣
   ║  Dashboard:  http://localhost:${port}${' '.repeat(14 - String(port).length)}║
   ║  Health:     http://localhost:${port}/api/health${' '.repeat(4 - String(port).length)}║

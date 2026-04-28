@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 
 // Crucix Master Orchestrator — runs all intelligence sources in parallel
 // Outputs structured JSON for Claude to synthesize into actionable briefing
@@ -42,12 +42,6 @@ import { briefing as space } from './sources/space.mjs';
 
 // === Tier 5: Live Market Data ===
 import { briefing as yfinance } from './sources/yfinance.mjs';
-// === IO Intelligence (UK-focused) ===
-import { briefing as gdeltIO } from './sources/gdelt_io.mjs';
-import { briefing as telegramIO } from './sources/telegram_io.mjs';
-import { enrichIOBriefing } from './io_synth.mjs';
-import { generateThreatAssessment } from './threat_assessment.mjs';
-import config from '../crucix.config.mjs';
 
 const SOURCE_TIMEOUT_MS = 30_000; // 30s max per individual source
 
@@ -109,10 +103,6 @@ export async function fullBriefing() {
 
     // Tier 5: Live Market Data
     runSource('YFinance', yfinance),
-
-    // IO Intelligence
-    runSource('GDELT_IO', gdeltIO),
-    runSource('Telegram_IO', telegramIO),
   ];
 
   // Each runSource has its own 30s timeout, so allSettled will resolve
@@ -140,36 +130,6 @@ export async function fullBriefing() {
     ),
   };
 
-  // ─── IO Synthesis Layer ───
-  try {
-    const gdeltIOData = output.sources.GDELT_IO;
-    if (gdeltIOData) {
-      console.error('[Crucix] Running IO synthesis (GLiNER + clustering)...');
-      const ioEnriched = await enrichIOBriefing(gdeltIOData);
-
-      if (config.llm?.provider && config.llm?.apiKey) {
-        console.error('[Crucix] Generating threat assessment...');
-        ioEnriched.threat_assessment = await generateThreatAssessment(
-          {
-            ...ioEnriched,
-            summary: ioEnriched.source_data,
-            by_actor: gdeltIOData.by_actor,
-            articles: ioEnriched.articles,
-            narrative_clusters: ioEnriched.narrative_clusters,
-            entity_ranking: ioEnriched.entity_ranking,
-            timespan: '1h',
-            timestamp: ioEnriched.timestamp
-          },
-          config.llm
-        );
-      }
-
-      output.io_intelligence = ioEnriched;
-    }
-  } catch (err) {
-    console.error('[Crucix] IO synthesis failed (non-fatal):', err.message);
-    output.io_intelligence = { error: err.message };
-  }
   console.error(`[Crucix] Sweep complete in ${totalMs}ms — ${output.crucix.sourcesOk}/${sources.length} sources returned data`);
   return output;
 }

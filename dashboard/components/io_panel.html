@@ -1,0 +1,357 @@
+<!--
+  IO Intelligence Panel — Drop-in component for jarvis.html
+  
+  Insert the <section> below into jarvis.html where you want the panel to appear.
+  Insert the <style> block into the existing <style> section.
+  Insert the <script> block before the closing </body> tag, OR append to existing dashboard JS.
+  
+  Data is consumed from /api/data — specifically the io_intelligence section
+  produced by runIntelligenceSweep() in io_sweep.mjs
+-->
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- HTML — paste into jarvis.html where the panel should appear         -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<section id="io-intel-panel" class="hud-panel">
+  <header class="hud-panel-header">
+    <h2 class="hud-panel-title">
+      <span class="hud-icon">⚠</span>
+      INFORMATION OPERATIONS — UK TARGETING
+    </h2>
+    <div class="hud-panel-meta">
+      <span id="io-status" class="hud-status">PENDING</span>
+      <span id="io-timestamp" class="hud-timestamp">—</span>
+    </div>
+  </header>
+
+  <!-- Actor breakdown bar -->
+  <div class="io-actor-grid">
+    <div class="io-actor-cell" data-actor="russia">
+      <div class="io-actor-flag">🇷🇺</div>
+      <div class="io-actor-label">RUSSIA</div>
+      <div class="io-actor-count" id="io-count-russia">—</div>
+      <div class="io-actor-tone" id="io-tone-russia">tone: —</div>
+    </div>
+    <div class="io-actor-cell" data-actor="china">
+      <div class="io-actor-flag">🇨🇳</div>
+      <div class="io-actor-label">CHINA</div>
+      <div class="io-actor-count" id="io-count-china">—</div>
+      <div class="io-actor-tone" id="io-tone-china">tone: —</div>
+    </div>
+    <div class="io-actor-cell" data-actor="iran">
+      <div class="io-actor-flag">🇮🇷</div>
+      <div class="io-actor-label">IRAN</div>
+      <div class="io-actor-count" id="io-count-iran">—</div>
+      <div class="io-actor-tone" id="io-tone-iran">tone: —</div>
+    </div>
+    <div class="io-actor-cell" data-actor="unknown">
+      <div class="io-actor-flag">⊘</div>
+      <div class="io-actor-label">UNATTRIBUTED</div>
+      <div class="io-actor-count" id="io-count-unknown">—</div>
+      <div class="io-actor-tone" id="io-tone-unknown">tone: —</div>
+    </div>
+  </div>
+
+  <!-- Surge alert -->
+  <div id="io-surge-alert" class="io-surge hidden">
+    <span class="io-surge-icon">▲</span>
+    <span id="io-surge-text">Activity within normal range</span>
+  </div>
+
+  <!-- Top narratives -->
+  <div class="io-section">
+    <h3 class="io-section-title">DOMINANT NARRATIVES</h3>
+    <ul id="io-narratives" class="io-narrative-list">
+      <li class="io-empty">Awaiting first sweep…</li>
+    </ul>
+  </div>
+
+  <!-- Top targets -->
+  <div class="io-section">
+    <h3 class="io-section-title">PRIMARY TARGETS</h3>
+    <div id="io-targets" class="io-target-pills">
+      <span class="io-empty">—</span>
+    </div>
+  </div>
+
+  <!-- Article feed (tabbed by actor) -->
+  <div class="io-section">
+    <div class="io-tab-bar">
+      <button class="io-tab active" data-tab="russia">RUSSIA</button>
+      <button class="io-tab" data-tab="china">CHINA</button>
+      <button class="io-tab" data-tab="iran">IRAN</button>
+      <button class="io-tab" data-tab="other">OTHER</button>
+    </div>
+    <ul id="io-feed" class="io-feed-list">
+      <li class="io-empty">No articles yet.</li>
+    </ul>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- CSS — paste into the existing <style> block in jarvis.html          -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<style>
+  /* Reuses Crucix's existing colour scheme — references CSS vars where possible */
+
+  #io-intel-panel {
+    border: 1px solid var(--hud-border, #1a4a5c);
+    background: rgba(0, 20, 30, 0.6);
+    padding: 16px;
+    margin: 16px 0;
+    font-family: var(--hud-font, 'Roboto Mono', monospace);
+    color: var(--hud-text, #4ae3ff);
+  }
+
+  .io-actor-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin: 12px 0;
+  }
+
+  .io-actor-cell {
+    background: rgba(10, 30, 40, 0.7);
+    border: 1px solid #1a4a5c;
+    padding: 12px 8px;
+    text-align: center;
+    transition: border-color 0.2s;
+  }
+  .io-actor-cell.elevated { border-color: #ff5555; box-shadow: 0 0 8px rgba(255,85,85,0.3); }
+  .io-actor-cell[data-actor="russia"].active  { border-color: #ff4444; }
+  .io-actor-cell[data-actor="china"].active   { border-color: #ffaa00; }
+  .io-actor-cell[data-actor="iran"].active    { border-color: #aa00ff; }
+
+  .io-actor-flag    { font-size: 20px; }
+  .io-actor-label   { font-size: 10px; letter-spacing: 1px; opacity: 0.7; margin-top: 4px; }
+  .io-actor-count   { font-size: 28px; font-weight: bold; margin: 4px 0; color: #4ae3ff; }
+  .io-actor-tone    { font-size: 10px; opacity: 0.6; }
+
+  .io-surge {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255, 85, 85, 0.15);
+    border-left: 3px solid #ff5555;
+    margin: 12px 0;
+    font-size: 12px;
+  }
+  .io-surge.hidden { display: none; }
+  .io-surge-icon { color: #ff5555; font-weight: bold; }
+
+  .io-section { margin: 16px 0; }
+  .io-section-title {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--hud-accent, #4ae3ff);
+    border-bottom: 1px solid #1a4a5c;
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+  }
+
+  .io-narrative-list { list-style: none; padding: 0; margin: 0; }
+  .io-narrative-list li {
+    padding: 6px 8px;
+    border-left: 2px solid #1a4a5c;
+    margin: 4px 0;
+    font-size: 12px;
+    background: rgba(10, 30, 40, 0.4);
+  }
+  .io-narrative-list li:hover { border-left-color: #4ae3ff; }
+  .io-narrative-claim   { color: #cce8ff; }
+  .io-narrative-meta    { font-size: 10px; opacity: 0.6; margin-top: 2px; }
+
+  .io-target-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .io-target-pill {
+    padding: 4px 10px;
+    background: rgba(74, 227, 255, 0.1);
+    border: 1px solid #1a4a5c;
+    font-size: 11px;
+    border-radius: 2px;
+  }
+  .io-target-pill .count { color: #ffaa00; margin-left: 6px; }
+
+  .io-tab-bar { display: flex; gap: 4px; margin-bottom: 8px; }
+  .io-tab {
+    flex: 1;
+    background: transparent;
+    border: 1px solid #1a4a5c;
+    color: var(--hud-text, #4ae3ff);
+    padding: 6px;
+    font-family: inherit;
+    font-size: 10px;
+    letter-spacing: 1px;
+    cursor: pointer;
+  }
+  .io-tab.active {
+    background: rgba(74, 227, 255, 0.15);
+    border-color: #4ae3ff;
+  }
+
+  .io-feed-list { list-style: none; padding: 0; margin: 0; max-height: 320px; overflow-y: auto; }
+  .io-feed-list li {
+    padding: 8px;
+    border-bottom: 1px solid #0a2530;
+    font-size: 12px;
+  }
+  .io-feed-title { color: #cce8ff; text-decoration: none; }
+  .io-feed-title:hover { color: #4ae3ff; }
+  .io-feed-meta { font-size: 10px; opacity: 0.5; margin-top: 2px; display: flex; gap: 12px; }
+  .io-feed-tone-negative { color: #ff7070; }
+
+  .io-empty { opacity: 0.4; font-style: italic; }
+  .hud-status.elevated { color: #ff5555; }
+  .hud-status.normal   { color: #4aff7a; }
+</style>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- JS — append to existing dashboard JS in jarvis.html                  -->
+<!-- Hooks into the existing SSE stream that pushes /api/data updates    -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<script>
+(function () {
+  const FEED_TAB_STATE = { active: 'russia' };
+  let lastFeedData = { russia: [], china: [], iran: [], other: [] };
+
+  // Tab switching
+  document.querySelectorAll('.io-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.io-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      FEED_TAB_STATE.active = btn.dataset.tab;
+      renderFeed(lastFeedData);
+    });
+  });
+
+  /**
+   * Main update entry point — call this whenever new data arrives.
+   * Expects the io_intelligence section of the global dashboard payload.
+   */
+  window.updateIOPanel = function (ioData) {
+    if (!ioData) {
+      setStatus('NO DATA', false);
+      return;
+    }
+
+    if (ioData.error) {
+      setStatus('ERROR', false);
+      return;
+    }
+
+    setStatus('LIVE', true);
+    document.getElementById('io-timestamp').textContent =
+      new Date(ioData.timestamp).toLocaleTimeString();
+
+    // Actor counts + tones
+    const actors = ['russia', 'china', 'iran', 'unknown'];
+    actors.forEach(actor => {
+      const data = ioData.by_actor?.[actor] || { count: 0, avg_tone: 0 };
+      document.getElementById(`io-count-${actor}`).textContent = data.count;
+      document.getElementById(`io-tone-${actor}`).textContent =
+        `tone: ${data.avg_tone?.toFixed(1) ?? '—'}`;
+
+      const cell = document.querySelector(`.io-actor-cell[data-actor="${actor}"]`);
+      cell.classList.toggle('active', data.count > 0);
+      cell.classList.toggle('elevated', data.count > 20); // surge per-actor
+    });
+
+    // Surge banner
+    const surge = ioData.surge || {};
+    const banner = document.getElementById('io-surge-alert');
+    if (surge.detected) {
+      banner.classList.remove('hidden');
+      document.getElementById('io-surge-text').textContent = surge.note;
+    } else {
+      banner.classList.add('hidden');
+    }
+
+    // Narratives
+    renderNarratives(ioData.top_narratives || []);
+
+    // Targets
+    renderTargets(ioData.top_targets || []);
+
+    // Feed
+    lastFeedData = ioData.feed || lastFeedData;
+    renderFeed(lastFeedData);
+  };
+
+  function setStatus(text, healthy) {
+    const el = document.getElementById('io-status');
+    el.textContent = text;
+    el.classList.toggle('normal', healthy);
+    el.classList.toggle('elevated', !healthy);
+  }
+
+  function renderNarratives(narratives) {
+    const ul = document.getElementById('io-narratives');
+    if (!narratives.length) {
+      ul.innerHTML = '<li class="io-empty">No narratives extracted (GLiNER2 may be offline).</li>';
+      return;
+    }
+    ul.innerHTML = narratives.map(n => `
+      <li>
+        <div class="io-narrative-claim">${escape(n.claim)}</div>
+        <div class="io-narrative-meta">
+          ${n.mentions} mentions · confidence ${n.confidence} · ${n.sample_sources?.length || 0} sources
+        </div>
+      </li>
+    `).join('');
+  }
+
+  function renderTargets(targets) {
+    const container = document.getElementById('io-targets');
+    if (!targets.length) {
+      container.innerHTML = '<span class="io-empty">No targets extracted.</span>';
+      return;
+    }
+    container.innerHTML = targets.map(t => `
+      <span class="io-target-pill">
+        ${escape(t.target)}<span class="count">${t.mentions}</span>
+      </span>
+    `).join('');
+  }
+
+  function renderFeed(feed) {
+    const ul = document.getElementById('io-feed');
+    const articles = feed[FEED_TAB_STATE.active] || [];
+    if (!articles.length) {
+      ul.innerHTML = '<li class="io-empty">No articles for this actor in the current window.</li>';
+      return;
+    }
+    ul.innerHTML = articles.map(a => `
+      <li>
+        <a class="io-feed-title" href="${escape(a.url)}" target="_blank" rel="noopener">
+          ${escape(a.title)}
+        </a>
+        <div class="io-feed-meta">
+          <span>${escape(a.domain || '')}</span>
+          <span>${escape(a.language || '')}</span>
+          <span class="${a.tone < -3 ? 'io-feed-tone-negative' : ''}">
+            tone: ${a.tone?.toFixed(1) ?? '—'}
+          </span>
+        </div>
+      </li>
+    `).join('');
+  }
+
+  function escape(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  // Hook into existing SSE stream
+  // Adjust this if Crucix's SSE event handler is named differently
+  if (window.crucixData) {
+    window.updateIOPanel(window.crucixData.io_intelligence);
+  }
+  document.addEventListener('crucix:data', (e) => {
+    window.updateIOPanel(e.detail?.io_intelligence);
+  });
+})();
+</script>

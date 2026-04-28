@@ -1,0 +1,356 @@
+<!--
+  Threat Assessment Panel — Dashboard component for displaying LLM-generated
+  structured threat assessments. Drop-in replacement for "Leverageable Ideas".
+
+  Insert blocks below into jarvis.html the same way as io_panel.html:
+    1. <style> block into existing <style>
+    2. <section> into <body>
+    3. <script> before </body>
+-->
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- HTML — paste into jarvis.html where the assessment should appear    -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<section id="threat-assessment-panel" class="hud-panel">
+  <header class="hud-panel-header">
+    <h2 class="hud-panel-title">
+      <span class="hud-icon">◈</span>
+      THREAT ASSESSMENT
+    </h2>
+    <div class="hud-panel-meta">
+      <span id="ta-confidence" class="ta-confidence-badge">—</span>
+      <span id="ta-timestamp" class="hud-timestamp">—</span>
+    </div>
+  </header>
+
+  <!-- Headline -->
+  <div id="ta-headline" class="ta-headline">
+    Awaiting first sweep…
+  </div>
+
+  <!-- Primary narratives -->
+  <div class="ta-section">
+    <h3 class="ta-section-title">PRIMARY NARRATIVES</h3>
+    <ul id="ta-narratives" class="ta-narrative-list">
+      <li class="ta-empty">—</li>
+    </ul>
+  </div>
+
+  <!-- Coordination indicators -->
+  <div class="ta-section">
+    <h3 class="ta-section-title">COORDINATION INDICATORS</h3>
+    <ul id="ta-coordination" class="ta-bullet-list">
+      <li class="ta-empty">—</li>
+    </ul>
+  </div>
+
+  <!-- Intent -->
+  <div class="ta-section">
+    <h3 class="ta-section-title">INTENT ASSESSMENT</h3>
+    <p id="ta-intent" class="ta-intent">—</p>
+  </div>
+
+  <!-- Recommended priorities -->
+  <div class="ta-section">
+    <h3 class="ta-section-title">RECOMMENDED PRIORITIES</h3>
+    <ul id="ta-priorities" class="ta-bullet-list">
+      <li class="ta-empty">—</li>
+    </ul>
+  </div>
+
+  <!-- Data gaps (collapsed by default) -->
+  <details class="ta-collapsible">
+    <summary class="ta-section-title">DATA GAPS</summary>
+    <ul id="ta-gaps" class="ta-bullet-list">
+      <li class="ta-empty">—</li>
+    </ul>
+  </details>
+
+  <footer class="ta-footer">
+    <span id="ta-meta">—</span>
+  </footer>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- CSS — paste into existing <style> block                              -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<style>
+  #threat-assessment-panel {
+    border: 1px solid var(--hud-border, #1a4a5c);
+    background: rgba(0, 20, 30, 0.6);
+    padding: 16px;
+    margin: 16px 0;
+    font-family: var(--hud-font, 'Roboto Mono', monospace);
+    color: var(--hud-text, #4ae3ff);
+  }
+
+  .ta-confidence-badge {
+    padding: 2px 10px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    border: 1px solid #1a4a5c;
+    text-transform: uppercase;
+  }
+  .ta-confidence-badge.high   { color: #ff5555; border-color: #ff5555; }
+  .ta-confidence-badge.medium { color: #ffaa00; border-color: #ffaa00; }
+  .ta-confidence-badge.low    { color: #888;    border-color: #555;    }
+
+  .ta-headline {
+    font-size: 14px;
+    line-height: 1.4;
+    color: #cce8ff;
+    padding: 12px;
+    background: rgba(74, 227, 255, 0.08);
+    border-left: 3px solid #4ae3ff;
+    margin: 12px 0;
+  }
+  .ta-headline.error {
+    border-left-color: #ff5555;
+    color: #ff9090;
+  }
+
+  .ta-section { margin: 16px 0; }
+  .ta-section-title {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--hud-accent, #4ae3ff);
+    border-bottom: 1px solid #1a4a5c;
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+  }
+
+  .ta-narrative-list { list-style: none; padding: 0; margin: 0; }
+  .ta-narrative-list li {
+    padding: 10px;
+    background: rgba(10, 30, 40, 0.5);
+    border-left: 2px solid #1a4a5c;
+    margin: 6px 0;
+    font-size: 12px;
+  }
+  .ta-narrative-claim {
+    color: #cce8ff;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .ta-narrative-meta {
+    font-size: 10px;
+    opacity: 0.7;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 4px 0;
+  }
+  .ta-narrative-actors {
+    display: inline-flex;
+    gap: 4px;
+  }
+  .ta-actor-tag {
+    padding: 1px 6px;
+    background: rgba(255, 85, 85, 0.15);
+    border: 1px solid #553333;
+    font-size: 9px;
+    text-transform: uppercase;
+  }
+  .ta-actor-tag.russia { color: #ff5555; }
+  .ta-actor-tag.china  { color: #ffaa00; }
+  .ta-actor-tag.iran   { color: #cc88ff; }
+
+  .ta-amplification-bar {
+    display: inline-block;
+    width: 60px;
+    height: 4px;
+    background: #1a3340;
+    position: relative;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+  .ta-amplification-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4ae3ff 0%, #ff5555 100%);
+  }
+
+  .ta-narrative-assessment {
+    font-size: 11px;
+    opacity: 0.85;
+    margin-top: 6px;
+    line-height: 1.4;
+  }
+
+  .ta-bullet-list { list-style: none; padding: 0; margin: 0; }
+  .ta-bullet-list li {
+    padding: 4px 0 4px 14px;
+    font-size: 12px;
+    line-height: 1.4;
+    position: relative;
+  }
+  .ta-bullet-list li:before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: #4ae3ff;
+    opacity: 0.6;
+  }
+
+  .ta-intent {
+    font-size: 12px;
+    line-height: 1.5;
+    opacity: 0.9;
+    padding: 8px 12px;
+    background: rgba(10, 30, 40, 0.4);
+    margin: 0;
+  }
+
+  .ta-collapsible {
+    margin: 16px 0;
+  }
+  .ta-collapsible summary {
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+  }
+  .ta-collapsible summary::-webkit-details-marker { display: none; }
+  .ta-collapsible[open] summary::after { content: ' ▾'; }
+  .ta-collapsible:not([open]) summary::after { content: ' ▸'; }
+
+  .ta-footer {
+    margin-top: 16px;
+    padding-top: 8px;
+    border-top: 1px solid #1a3340;
+    font-size: 10px;
+    opacity: 0.5;
+  }
+
+  .ta-empty { opacity: 0.4; font-style: italic; }
+</style>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- JS — append to existing dashboard JS                                 -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<script>
+(function () {
+  /**
+   * Update the threat assessment panel with new LLM-generated assessment.
+   * Expects sweepData.threat_assessment field from the dashboard payload.
+   */
+  window.updateThreatAssessment = function (assessment) {
+    if (!assessment) {
+      setHeadline('No assessment available', 'error');
+      setConfidence(null);
+      return;
+    }
+
+    if (assessment.error) {
+      setHeadline(assessment.headline_assessment || `Error: ${assessment.error}`, 'error');
+      setConfidence(assessment.confidence);
+      return;
+    }
+
+    setHeadline(assessment.headline_assessment, null);
+    setConfidence(assessment.confidence);
+
+    document.getElementById('ta-timestamp').textContent =
+      assessment.generated_at
+        ? new Date(assessment.generated_at).toLocaleTimeString()
+        : '—';
+
+    renderNarratives(assessment.primary_narratives || []);
+    renderBullets('ta-coordination', assessment.coordination_indicators || []);
+    renderBullets('ta-priorities', assessment.recommended_priorities || []);
+    renderBullets('ta-gaps', assessment.data_gaps || []);
+
+    document.getElementById('ta-intent').textContent =
+      assessment.intent_assessment || '—';
+
+    const meta = [
+      assessment.model && `Model: ${assessment.model}`,
+      assessment.articles_analysed && `${assessment.articles_analysed} articles analysed`,
+      assessment.data_window && `Window: ${assessment.data_window}`,
+      assessment.tokens && `${assessment.tokens.inputTokens}+${assessment.tokens.outputTokens} tokens`
+    ].filter(Boolean).join(' · ');
+    document.getElementById('ta-meta').textContent = meta || '—';
+  };
+
+  function setHeadline(text, modifier) {
+    const el = document.getElementById('ta-headline');
+    el.textContent = text || '—';
+    el.classList.remove('error');
+    if (modifier === 'error') el.classList.add('error');
+  }
+
+  function setConfidence(level) {
+    const el = document.getElementById('ta-confidence');
+    el.classList.remove('high', 'medium', 'low');
+    if (!level) {
+      el.textContent = '—';
+      return;
+    }
+    el.textContent = level.toUpperCase();
+    el.classList.add(level.toLowerCase());
+  }
+
+  function renderNarratives(narratives) {
+    const ul = document.getElementById('ta-narratives');
+    if (!narratives.length) {
+      ul.innerHTML = '<li class="ta-empty">No narratives identified.</li>';
+      return;
+    }
+    ul.innerHTML = narratives.map(n => {
+      const actors = (n.actors_pushing || [])
+        .map(a => `<span class="ta-actor-tag ${esc(a)}">${esc(a)}</span>`)
+        .join('');
+
+      const ampl = clamp(n.amplification_score || 0, 0, 10) * 10;
+
+      return `
+        <li>
+          <div class="ta-narrative-claim">${esc(n.claim)}</div>
+          <div class="ta-narrative-meta">
+            <span class="ta-narrative-actors">${actors}</span>
+            <span>Target: ${esc(n.uk_target || '—')}</span>
+            <span>
+              Amp:
+              <span class="ta-amplification-bar">
+                <span class="ta-amplification-fill" style="width:${ampl}%"></span>
+              </span>
+              ${n.amplification_score || 0}/10
+            </span>
+          </div>
+          <div class="ta-narrative-assessment">${esc(n.assessment || '')}</div>
+        </li>
+      `;
+    }).join('');
+  }
+
+  function renderBullets(elementId, items) {
+    const ul = document.getElementById(elementId);
+    if (!items.length) {
+      ul.innerHTML = '<li class="ta-empty">—</li>';
+      return;
+    }
+    ul.innerHTML = items.map(it => `<li>${esc(it)}</li>`).join('');
+  }
+
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+    );
+  }
+
+  function clamp(n, min, max) {
+    return Math.max(min, Math.min(max, n));
+  }
+
+  // Hook into existing SSE stream (same pattern as io_panel.html)
+  if (window.crucixData) {
+    window.updateThreatAssessment(window.crucixData.threat_assessment);
+  }
+  document.addEventListener('crucix:data', (e) => {
+    window.updateThreatAssessment(e.detail?.threat_assessment);
+  });
+})();
+</script>
