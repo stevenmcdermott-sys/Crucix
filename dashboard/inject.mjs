@@ -516,20 +516,21 @@ export async function synthesize(data) {
   // === Yahoo Finance live market data ===
   const yfData = data.sources.YFinance || {};
   const yfQuotes = yfData.quotes || {};
+  const validQuote = q => q && !q.error && q.price != null;
   const markets = {
-    indexes: (yfData.indexes || []).map(q => ({
+    indexes: (yfData.indexes || []).filter(validQuote).map(q => ({
       symbol: q.symbol, name: q.name, price: q.price,
       change: q.change, changePct: q.changePct, history: q.history || []
     })),
-    rates: (yfData.rates || []).map(q => ({
+    rates: (yfData.rates || []).filter(validQuote).map(q => ({
       symbol: q.symbol, name: q.name, price: q.price,
       change: q.change, changePct: q.changePct
     })),
-    commodities: (yfData.commodities || []).map(q => ({
+    commodities: (yfData.commodities || []).filter(validQuote).map(q => ({
       symbol: q.symbol, name: q.name, price: q.price,
       change: q.change, changePct: q.changePct, history: q.history || []
     })),
-    crypto: (yfData.crypto || []).map(q => ({
+    crypto: (yfData.crypto || []).filter(validQuote).map(q => ({
       symbol: q.symbol, name: q.name, price: q.price,
       change: q.change, changePct: q.changePct
     })),
