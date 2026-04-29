@@ -16,11 +16,12 @@ const SAT_CATEGORIES = {
   oneweb: '/NORAD/elements/gp.php?GROUP=oneweb&FORMAT=json',
 };
 
+
 // Get TLE data for a category
 async function getTLEs(category) {
   const path = SAT_CATEGORIES[category];
   if (!path) return { error: 'Invalid category' };
-  const data = await safeFetch(`${CELESTRAK_BASE}${path}`, { timeout: 20000 });
+  const data = await safeFetch(`${CELESTRAK_BASE}${path}`, { timeout: 30000, retries: 0 });
   return data;
 }
 
@@ -79,11 +80,11 @@ async function getStationData() {
   return { totalStations: stations.length, stations: stations.slice(0, 10), iss };
 }
 
-// Get military satellite count
+// Get military satellite count — uses full TLE list (smaller than constellations)
 async function getMilitaryCount() {
   const data = await getTLEs('military');
   if (data.error || !Array.isArray(data)) {
-    return { count: 0, error: data.error };
+    return { count: 0, byCountry: {}, error: data.error };
   }
 
   const byCountry = {};
@@ -95,11 +96,11 @@ async function getMilitaryCount() {
   return { count: data.length, byCountry };
 }
 
-// Get mega-constellation stats (Starlink, OneWeb)
+// Get mega-constellation stats (Starlink, OneWeb) — no retries to avoid stalling sweep
 async function getConstellationStats() {
   const [starlink, oneweb] = await Promise.all([
-    getTLEs('starlink'),
-    getTLEs('oneweb'),
+    safeFetch(`${CELESTRAK_BASE}${SAT_CATEGORIES.starlink}`, { timeout: 30000, retries: 0 }),
+    safeFetch(`${CELESTRAK_BASE}${SAT_CATEGORIES.oneweb}`, { timeout: 30000, retries: 0 }),
   ]);
 
   return {
