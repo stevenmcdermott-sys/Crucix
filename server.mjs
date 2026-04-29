@@ -288,6 +288,12 @@ app.get('/api/sources', (req, res) => {
     timing: Object.entries(lastSourceTiming).map(([name, t]) => ({ name, status: t.status, ms: t.ms }))
              .sort((a, b) => (b.ms || 0) - (a.ms || 0)),
     envPresent: Object.fromEntries(envKeys.map(k => [k, !!process.env[k]])),
+    synthesized: {
+      fredCount: currentData?.fred?.length ?? 'no currentData',
+      fredSample: currentData?.fred?.slice(0, 2) ?? null,
+      spaceOk: !!(currentData?.space?.militarySats > 0 || currentData?.space?.totalNewObjects > 0),
+      spaceSample: currentData?.space ? { totalNewObjects: currentData.space.totalNewObjects, militarySats: currentData.space.militarySats } : null,
+    },
   });
 });
 
