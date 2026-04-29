@@ -1622,7 +1622,13 @@ function safeExternalUrl(raw){try{const u=new URL(raw,location.href);return u.pr
 
 // === BOOT SEQUENCE ===
 function runBoot(){
-  const acledStatus = D.acled?.totalEvents > 0 ? `<span class="ok">${D.acled.totalEvents} EVENTS</span>` : '<span style="color:var(--warn)">DEGRADED</span>';
+  const acledStatus = D.acled?.totalEvents > 0
+    ? `<span class="ok">${D.acled.totalEvents} EVENTS</span>`
+    : D.acled?.status === 'no_credentials'
+      ? '<span style="color:var(--dim)">NO CREDENTIALS</span>'
+      : D.acled?.status === 'error' || D.acled?.error
+        ? '<span style="color:var(--warn)">DEGRADED</span>'
+        : '<span style="color:var(--dim)">NO DATA</span>';
   const lines=[
     {text:t('boot.initializing','INITIALIZING DDN ENGINE v2.1.0'),delay:0},
     {text:t('boot.connecting','CONNECTING {count} OSINT SOURCES...').replace('{count}',D.meta.sourcesQueried),delay:400},

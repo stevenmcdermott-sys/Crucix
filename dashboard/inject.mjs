@@ -484,7 +484,12 @@ export async function synthesize(data) {
 
   // ACLED conflict events
   const acledData = data.sources.ACLED || {};
-  const acled = acledData.error ? { totalEvents: 0, totalFatalities: 0, byRegion: {}, byType: {}, deadliestEvents: [] } : {
+  const acledFailed = !!(acledData.error || acledData.status === 'no_credentials');
+  const acled = acledFailed ? {
+    totalEvents: 0, totalFatalities: 0, byRegion: {}, byType: {}, deadliestEvents: [],
+    status: acledData.status || 'error',
+    error: acledData.error || acledData.message || null,
+  } : {
     totalEvents: acledData.totalEvents || 0,
     totalFatalities: acledData.totalFatalities || 0,
     byRegion: acledData.byRegion || {},
