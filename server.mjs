@@ -32,6 +32,8 @@ let currentData = null;    // Current synthesized dashboard data
 let lastSweepTime = null;  // Timestamp of last sweep
 let sweepStartedAt = null; // Timestamp when current/last sweep started
 let sweepInProgress = false;
+let lastSourceErrors = []; // Source-level errors from last sweep
+let lastSourceTiming = {}; // Per-source timing from last sweep
 const startTime = Date.now();
 const sseClients = new Set();
 
@@ -276,6 +278,19 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// API: source-level status — shows which sources failed and why
+app.get('/api/sources', (req, res) => {
+  const envKeys = ['FRED_API_KEY','EIA_API_KEY','FIRMS_MAP_KEY','AISSTREAM_API_KEY',
+                   'ACLED_EMAIL','ACLED_PASSWORD','LLM_API_KEY','LLM_PROVIDER'];
+  res.json({
+    lastSweep: lastSweepTime,
+    errors: lastSourceErrors,
+    timing: Object.entries(lastSourceTiming).map(([name, t]) => ({ name, status: t.status, ms: t.ms }))
+             .sort((a, b) => (b.ms || 0) - (a.ms || 0)),
+    envPresent: Object.fromEntries(envKeys.map(k => [k, !!process.env[k]])),
+  });
+});
+
 // API: available locales
 app.get('/api/locales', (req, res) => {
   res.json({
@@ -325,6 +340,8 @@ async function runSweepCycle() {
     // 2. Save to runs/latest.json
     writeFileSync(join(RUNS_DIR, 'latest.json'), JSON.stringify(rawData, null, 2));
     lastSweepTime = new Date().toISOString();
+    lastSourceErrors = rawData.errors || [];
+    lastSourceTiming = rawData.timing || {};
 
     // 3. Synthesize into dashboard format
     console.log('[Crucix] Synthesizing dashboard data...');
