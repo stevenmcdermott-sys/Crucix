@@ -62,6 +62,15 @@ export async function briefing(apiKey) {
     };
   }
 
+  // Probe a single cheap series first so we get a clear error on bad key / rate-limit
+  const probe = await getSeriesLatest('VIXCLS', apiKey);
+  if (probe?.error) {
+    return { source: 'FRED', error: `FRED API error: ${probe.error}`, hint: 'Check FRED_API_KEY is valid at fred.stlouisfed.org' };
+  }
+  if (probe?.status && probe.status !== 200) {
+    return { source: 'FRED', error: `FRED API status ${probe.status}: ${probe.message || 'unknown error'}` };
+  }
+
   const entries = Object.entries(KEY_SERIES);
   const results = await Promise.all(
     entries.map(async ([id, label]) => {

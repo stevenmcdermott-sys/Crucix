@@ -405,11 +405,14 @@ export async function synthesize(data) {
   const who = (data.sources.WHO?.diseaseOutbreakNews || []).slice(0, 10).map(w => ({
     title: w.title?.substring(0, 120), date: w.date, summary: w.summary?.substring(0, 150)
   }));
-  const fred = (data.sources.FRED?.indicators || []).map(f => ({
-    id: f.id, label: f.label, value: f.value, date: f.date,
-    recent: f.recent || [],
-    momChange: f.momChange, momChangePct: f.momChangePct
-  }));
+  const fredRaw = data.sources.FRED || {};
+  const fred = fredRaw.error
+    ? (() => { console.error('[inject] FRED error:', fredRaw.error); return []; })()
+    : (fredRaw.indicators || []).map(f => ({
+        id: f.id, label: f.label, value: f.value, date: f.date,
+        recent: f.recent || [],
+        momChange: f.momChange, momChangePct: f.momChangePct
+      }));
   const energyData = data.sources.EIA || {};
   const oilPrices = energyData.oilPrices || {};
   const wtiRecent = (oilPrices.wti?.recent || []).map(d => d.value);
