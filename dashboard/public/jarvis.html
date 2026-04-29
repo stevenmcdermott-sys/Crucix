@@ -2055,14 +2055,18 @@ document.addEventListener('DOMContentLoaded', () => {
    * Update the threat assessment panel with new LLM-generated assessment.
    * Expects sweepData.threat_assessment field from the dashboard payload.
    */
+  let _lastAssessment = null;
+
   window.updateThreatAssessment = function (assessment) {
     if (!assessment) {
-      setHeadline('No assessment available', 'error');
+      if (_lastAssessment) return;
+      setHeadline('Awaiting first sweep…', null);
       setConfidence(null);
       return;
     }
 
     if (assessment.error) {
+      if (_lastAssessment) return;
       setHeadline(assessment.headline_assessment || `Error: ${assessment.error}`, 'error');
       setConfidence(assessment.confidence);
       return;
@@ -2091,6 +2095,7 @@ document.addEventListener('DOMContentLoaded', () => {
       assessment.tokens && `${assessment.tokens.inputTokens}+${assessment.tokens.outputTokens} tokens`
     ].filter(Boolean).join(' · ');
     document.getElementById('ta-meta').textContent = meta || '—';
+    _lastAssessment = assessment;
   };
 
   function setHeadline(text, modifier) {
@@ -2333,13 +2338,17 @@ document.addEventListener('DOMContentLoaded', () => {
    * Main update entry point — call this whenever new data arrives.
    * Expects the io_intelligence section of the global dashboard payload.
    */
+  let _lastIOData = null;
+
   window.updateIOPanel = function (ioData) {
     if (!ioData) {
-      setStatus('NO DATA', false);
+      if (_lastIOData) return;
+      setStatus('PENDING', false);
       return;
     }
 
     if (ioData.error) {
+      if (_lastIOData) return;
       setStatus('ERROR', false);
       return;
     }
@@ -2384,6 +2393,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Feed
     lastFeedData = ioData.feed || lastFeedData;
     renderFeed(lastFeedData);
+    _lastIOData = ioData;
   };
 
   function setStatus(text, healthy) {
