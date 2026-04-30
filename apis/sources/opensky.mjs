@@ -49,45 +49,46 @@ export async function getArrivals(airportIcao, begin, end) {
   return safeFetch(`${BASE}/flights/arrival?${params}`);
 }
 
-// Key hotspot regions for monitoring
+// Key hotspot regions for monitoring — lat/lon centre included for globe rendering
 const HOTSPOTS = {
-  middleEast: { lamin: 12, lomin: 30, lamax: 42, lomax: 65, label: 'Middle East' },
-  taiwan: { lamin: 20, lomin: 115, lamax: 28, lomax: 125, label: 'Taiwan Strait' },
-  ukraine: { lamin: 44, lomin: 22, lamax: 53, lomax: 41, label: 'Ukraine Region' },
-  baltics: { lamin: 53, lomin: 19, lamax: 60, lomax: 29, label: 'Baltic Region' },
-  southChinaSea: { lamin: 5, lomin: 105, lamax: 23, lomax: 122, label: 'South China Sea' },
-  koreanPeninsula: { lamin: 33, lomin: 124, lamax: 43, lomax: 132, label: 'Korean Peninsula' },
-  caribbean: { lamin: 18, lomin: -90, lamax: 30, lomax: -72, label: 'Caribbean' },
-  gulfOfGuinea: { lamin: -2, lomin: -5, lamax: 8, lomax: 10, label: 'Gulf of Guinea' },
-  capeRoute: { lamin: -38, lomin: 12, lamax: -28, lomax: 24, label: 'Cape Route' },
-  hornOfAfrica: { lamin: 5, lomin: 40, lamax: 15, lomax: 55, label: 'Horn of Africa' },
+  middleEast:       { lamin: 12, lomin: 30, lamax: 42, lomax: 65,  label: 'Middle East',      lat: 27, lon: 47 },
+  taiwan:           { lamin: 20, lomin: 115, lamax: 28, lomax: 125, label: 'Taiwan Strait',    lat: 24, lon: 120 },
+  ukraine:          { lamin: 44, lomin: 22, lamax: 53, lomax: 41,  label: 'Ukraine Region',    lat: 49, lon: 32 },
+  baltics:          { lamin: 53, lomin: 19, lamax: 60, lomax: 29,  label: 'Baltic Region',     lat: 57, lon: 24 },
+  southChinaSea:    { lamin: 5,  lomin: 105, lamax: 23, lomax: 122, label: 'South China Sea',  lat: 14, lon: 114 },
+  koreanPeninsula:  { lamin: 33, lomin: 124, lamax: 43, lomax: 132, label: 'Korean Peninsula', lat: 37, lon: 127 },
+  caribbean:        { lamin: 18, lomin: -90, lamax: 30, lomax: -72, label: 'Caribbean',        lat: 25, lon: -80 },
+  gulfOfGuinea:     { lamin: -2, lomin: -5,  lamax: 8,  lomax: 10,  label: 'Gulf of Guinea',   lat:  4, lon:  2  },
+  capeRoute:        { lamin: -38, lomin: 12, lamax: -28, lomax: 24, label: 'Cape Route',        lat: -34, lon: 18 },
+  hornOfAfrica:     { lamin: 5,  lomin: 40,  lamax: 15,  lomax: 55,  label: 'Horn of Africa',   lat: 10, lon: 51 },
 };
 
-// Briefing — check hotspot regions for flight activity
+// Briefing — stagger requests to avoid anonymous rate-limiting (1 req/s safe limit)
 export async function briefing() {
   const hotspotEntries = Object.entries(HOTSPOTS);
-  const results = await Promise.all(
-    hotspotEntries.map(async ([key, box]) => {
-      const data = await getFlightsInArea(box.lamin, box.lomin, box.lamax, box.lomax);
-      const error = data?.error || null;
-      const states = data?.states || [];
-      return {
-        region: box.label,
-        key,
-        totalAircraft: states.length,
-        // states format: [icao24, callsign, origin_country, ...]
-        byCountry: states.reduce((acc, s) => {
-          const country = s[2] || 'Unknown';
-          acc[country] = (acc[country] || 0) + 1;
-          return acc;
-        }, {}),
-        // Flag potentially interesting (military often have no callsign or specific patterns)
-        noCallsign: states.filter(s => !s[1]?.trim()).length,
-        highAltitude: states.filter(s => s[7] && s[7] > 12000).length, // >12km altitude
-        ...(error ? { error } : {}),
-      };
-    })
-  );
+  const results = [];
+  for (const [key, box] of hotspotEntries) {
+    const data = await getFlightsInArea(box.lamin, box.lomin, box.lamax, box.lomax);
+    const error = data?.error || null;
+    const states = Array.isArray(data?.states) ? data.states : [];
+    results.push({
+      region: box.label,
+      key,
+      lat: box.lat,
+      lon: box.lon,
+      totalAircraft: states.length,
+      byCountry: states.reduce((acc, s) => {
+        const country = s[2] || 'Unknown';
+        acc[country] = (acc[country] || 0) + 1;
+        return acc;
+      }, {}),
+      noCallsign: states.filter(s => !s[1]?.trim()).length,
+      highAltitude: states.filter(s => s[7] && s[7] > 12000).length,
+      ...(error ? { error } : {}),
+    });
+    // Brief pause between requests to stay within anonymous rate limit
+    await new Promise(r => setTimeout(r, 500));
+  }
 
   const hotspotErrors = results
     .filter(r => r.error)

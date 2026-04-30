@@ -107,13 +107,17 @@ function sumAirHotspots(hotspots = []) {
 }
 
 function summarizeAirHotspots(hotspots = []) {
-  return hotspots.map(h => ({
-    region: h.region,
-    total: h.totalAircraft || 0,
-    noCallsign: h.noCallsign || 0,
-    highAlt: h.highAltitude || 0,
-    top: Object.entries(h.byCountry || {}).sort((a, b) => b[1] - a[1]).slice(0, 5),
-  }));
+  return hotspots
+    .filter(h => (h.totalAircraft || 0) > 0)
+    .map(h => ({
+      region: h.region,
+      lat: h.lat ?? null,
+      lon: h.lon ?? null,
+      total: h.totalAircraft || 0,
+      noCallsign: h.noCallsign || 0,
+      highAlt: h.highAltitude || 0,
+      top: Object.entries(h.byCountry || {}).sort((a, b) => b[1] - a[1]).slice(0, 5),
+    }));
 }
 
 function loadOpenSkyFallback(currentTimestamp) {
@@ -380,7 +384,17 @@ export async function synthesize(data) {
     hc: h.highConfidence || 0,
     fires: (h.highIntensity || []).slice(0, 8).map(f => ({ lat: f.lat, lon: f.lon, frp: f.frp || 0 }))
   }));
-  const tSignals = data.sources.FIRMS?.signals || [];
+  // Aggregate signals from all sources into one cross-source array
+  const tSignals = [
+    ...(data.sources.FIRMS?.signals || []),
+    ...(data.sources.FRED?.signals || []),
+    ...(data.sources.EIA?.signals || []),
+    ...(data.sources.Space?.signals || []),
+    ...(data.sources.Treasury?.signals || []),
+    ...(data.sources.ACLED?.signals || []),
+    ...(data.sources.BLS?.signals || []),
+    ...(data.sources.GDELT?.signals || []),
+  ].filter(Boolean);
   const chokepoints = Object.values(data.sources.Maritime?.chokepoints || {}).map(c => ({
     label: c.label || c.name, note: c.note || '', lat: c.lat || 0, lon: c.lon || 0
   }));
