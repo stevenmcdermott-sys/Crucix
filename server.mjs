@@ -278,6 +278,22 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// API: raw FRED probe — shows exactly what FRED returns for VIXCLS
+app.get('/api/debug/fred', async (req, res) => {
+  const key = process.env.FRED_API_KEY;
+  if (!key) return res.json({ error: 'FRED_API_KEY not set' });
+  try {
+    const url = `https://api.stlouisfed.org/fred/series/observations?series_id=VIXCLS&api_key=${key}&file_type=json&sort_order=desc&limit=3&observation_start=2026-01-01`;
+    const r = await fetch(url, { signal: AbortSignal.timeout(15000) });
+    const text = await r.text();
+    let parsed;
+    try { parsed = JSON.parse(text); } catch { parsed = { rawText: text.slice(0, 500) }; }
+    res.json({ httpStatus: r.status, keyPrefix: key.slice(0, 6) + '...', data: parsed });
+  } catch (e) {
+    res.json({ error: e.message });
+  }
+});
+
 // API: source-level status — shows which sources failed and why
 app.get('/api/sources', (req, res) => {
   const envKeys = ['FRED_API_KEY','EIA_API_KEY','FIRMS_MAP_KEY','AISSTREAM_API_KEY',
