@@ -414,9 +414,8 @@ async function runSweepCycle() {
     // Prune old alerted signals
     memory.pruneAlertedSignals();
 
-    if (rawData.io_intelligence) {
-      synthesized.io_intelligence = rawData.io_intelligence;
-    }
+    // Attach IO intelligence — carry forward previous sweep's data if new sweep didn't produce any
+    synthesized.io_intelligence = rawData.io_intelligence || currentData?.io_intelligence || null;
     currentData = synthesized;
 
     // 6. Push to all connected browsers
@@ -484,10 +483,8 @@ async function start() {
     try {
       const existing = JSON.parse(readFileSync(join(RUNS_DIR, 'latest.json'), 'utf8'));
       const data = await synthesize(existing);
+      data.io_intelligence = existing?.io_intelligence || null;
       currentData = data;
-      if (existing?.io_intelligence) {
-        currentData.io_intelligence = existing.io_intelligence;
-      }
       console.log('[Crucix] Loaded existing data from runs/latest.json — dashboard ready instantly');
       broadcast({ type: 'update', data: currentData });
     } catch {
