@@ -23,6 +23,8 @@ const SYMBOLS = {
   'CL=F': 'WTI Crude',
   'BZ=F': 'Brent Crude',
   'NG=F': 'Natural Gas',
+  'HG=F': 'Copper',
+  'URA': 'Uranium ETF',
   // Crypto
   'BTC-USD': 'Bitcoin',
   'ETH-USD': 'Ethereum',
@@ -119,7 +121,7 @@ export async function collect() {
     },
     indexes: pickGroup(quotes, ['SPY', 'QQQ', 'DIA', 'IWM']),
     rates: pickGroup(quotes, ['TLT', 'HYG', 'LQD']),
-    commodities: pickGroup(quotes, ['GC=F', 'SI=F', 'CL=F', 'BZ=F', 'NG=F']),
+    commodities: pickGroup(quotes, ['GC=F', 'SI=F', 'CL=F', 'BZ=F', 'NG=F', 'HG=F', 'URA']),
     crypto: pickGroup(quotes, ['BTC-USD', 'ETH-USD']),
     volatility: pickGroup(quotes, ['^VIX']),
   };

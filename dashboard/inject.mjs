@@ -561,8 +561,17 @@ export async function synthesize(data) {
       change: yfQuotes['^VIX'].change,
       changePct: yfQuotes['^VIX'].changePct,
     } : null,
+    metals: (yfData.commodities || []).filter(q => validQuote(q) && ['GC=F', 'HG=F', 'URA'].includes(q.symbol)).map(q => ({
+      symbol: q.symbol, name: q.name, price: q.price,
+      change: q.change, changePct: q.changePct, history: q.history || [],
+    })),
     timestamp: yfData.summary?.timestamp || null,
   };
+
+  // Gold/copper ratio (gold in $/oz, copper futures in $/lb — ratio = oz gold per lb copper)
+  const gcP = yfQuotes['GC=F']?.price;
+  const hgP = yfQuotes['HG=F']?.price;
+  if (gcP && hgP) markets.goldCopperRatio = +(gcP / hgP).toFixed(1);
 
   // Override stale EIA prices with live Yahoo Finance data if available
   const yfWti = yfQuotes['CL=F'];
@@ -590,6 +599,16 @@ export async function synthesize(data) {
     tg: { posts: tgData.totalPosts || 0, urgent: tgUrgent, topPosts: tgTop },
     who, fred, energy, bls, treasury, gscpi, defense, noaa, epa, acled, gdelt, space, health, news,
     markets, // Live Yahoo Finance market data
+    cisa: {
+      totalCount: data.sources.CISA_KEV?.totalCount || 0,
+      dateReleased: data.sources.CISA_KEV?.dateReleased || null,
+      recent: (data.sources.CISA_KEV?.recent || []).slice(0, 12),
+    },
+    ofac: {
+      lastUpdated: data.sources.OFAC?.lastUpdated || null,
+      sdnEntryCount: data.sources.OFAC?.sdnList?.entryCount || null,
+      sampleEntries: (data.sources.OFAC?.sampleEntries || []).slice(0, 6),
+    },
     ideas: [], ideasSource: 'disabled',
     // newsFeed for ticker (merged RSS + GDELT + Telegram)
     newsFeed: buildNewsFeed(news, gdeltData, tgUrgent, tgTop),

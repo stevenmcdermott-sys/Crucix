@@ -42,6 +42,7 @@ import { briefing as space } from './sources/space.mjs';
 
 // === Tier 5: Live Market Data ===
 import { briefing as yfinance } from './sources/yfinance.mjs';
+import { briefing as cisaKev } from './sources/cisa_kev.mjs';
 // === IO Intelligence (UK-focused) ===
 import { briefing as gdeltIO } from './sources/gdelt_io.mjs';
 import { briefing as telegramIO } from './sources/telegram_io.mjs';
@@ -109,6 +110,9 @@ export async function fullBriefing() {
 
     // Tier 5: Live Market Data
     runSource('YFinance', yfinance),
+
+    // Tier 6: Cyber & Sanctions
+    runSource('CISA_KEV', cisaKev),
 
     // IO Intelligence
     runSource('GDELT_IO', gdeltIO),

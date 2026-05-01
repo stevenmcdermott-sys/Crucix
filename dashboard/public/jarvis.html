@@ -320,7 +320,43 @@ body.low-perf .ticker-wrap::-webkit-scrollbar-thumb{background:rgba(100,240,200,
 /* IDEA HORIZON BADGE */
 .idea-horizon{font-family:var(--mono);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;padding:1px 5px;border:1px solid rgba(100,240,200,0.15);color:var(--dim);margin-left:6px}
 
+/* COLLAPSIBLE PANELS */
+.panel-toggle{background:none;border:none;color:var(--dim);cursor:pointer;font-size:12px;padding:0 3px;line-height:1;flex-shrink:0;transition:color 0.15s}.panel-toggle:hover{color:var(--accent)}
 
+/* LOWER TAB BAR */
+.lower-container{display:flex;flex-direction:column}
+.lower-tab-bar{display:flex;border:1px solid var(--border);border-bottom:none;background:var(--panel);backdrop-filter:blur(20px);flex-wrap:wrap;margin-top:8px}
+.lower-tab{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;padding:6px 16px;background:none;border:none;border-right:1px solid var(--border);color:var(--dim);cursor:pointer;transition:all 0.15s}
+.lower-tab:hover{color:var(--text);background:rgba(255,255,255,0.03)}
+.lower-tab.active{color:var(--accent);background:rgba(100,240,200,0.05);box-shadow:inset 0 -2px 0 var(--accent)}
+.lower-container .lower{margin-top:0}
+
+/* COMPACT DENSITY */
+html[data-density="compact"] .g-panel{padding:7px}
+html[data-density="compact"] .layer-item{padding:5px 6px;margin-bottom:2px}
+html[data-density="compact"] .econ-row{padding:3px 0}
+html[data-density="compact"] .sec-head{margin-bottom:6px}
+html[data-density="compact"] .site-row{padding:4px 6px}
+html[data-density="compact"] .layer-name{font-size:11px}
+
+/* KEYBOARD HELP OVERLAY */
+#kbdHelpOverlay{position:fixed;inset:0;z-index:9999;background:rgba(2,4,8,0.88);display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.kbd-panel{border:1px solid var(--border);background:var(--panel);padding:28px 36px;min-width:340px}
+.kbd-panel h3{font-family:var(--mono);font-size:11px;letter-spacing:0.14em;color:var(--accent);margin-bottom:16px;text-transform:uppercase}
+.kbd-row{display:flex;justify-content:space-between;gap:24px;font-family:var(--mono);font-size:10px;margin-bottom:9px;align-items:center}
+.kbd-key{color:var(--accent);font-weight:600;background:rgba(100,240,200,0.08);border:1px solid rgba(100,240,200,0.25);padding:2px 7px;letter-spacing:0.08em}
+.kbd-desc{color:var(--dim)}
+.kbd-close{margin-top:18px;font-family:var(--mono);font-size:9px;color:var(--dim);text-align:center;cursor:pointer;letter-spacing:0.08em}
+.kbd-close:hover{color:var(--text)}
+
+/* INTEL TAB — CISA / OFAC */
+.kev-row{font-family:var(--mono);font-size:9px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;gap:8px;align-items:flex-start}
+.kev-cve{color:var(--accent2);flex-shrink:0;min-width:120px}
+.kev-name{color:var(--text);flex:1}
+.kev-date{color:var(--dim);flex-shrink:0}
+.ofac-row{font-family:var(--mono);font-size:9px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;gap:8px}
+.ofac-name{color:var(--text);flex:1}
+.ofac-prog{color:var(--warn);font-size:8px}
 
 </style>
 </head>
@@ -353,7 +389,15 @@ body.low-perf .ticker-wrap::-webkit-scrollbar-thumb{background:rgba(100,240,200,
         <button class="proj-toggle" id="projToggle" onclick="toggleMapMode()">GLOBE MODE</button>
         <div class="map-popup" id="mapPopup"><button class="pp-close" onclick="closePopup()">&times;</button><div class="pp-head"></div><div class="pp-text"></div><div class="pp-meta"></div></div>
       </div>
-      <div class="lower" id="lowerGrid"></div>
+      <div class="lower-container">
+        <div class="lower-tab-bar" id="lowerTabBar">
+          <button class="lower-tab" data-tab="news" onclick="switchLowerTab('news')">NEWS</button>
+          <button class="lower-tab" data-tab="markets" onclick="switchLowerTab('markets')">MARKETS</button>
+          <button class="lower-tab" data-tab="ideas" onclick="switchLowerTab('ideas')">IDEAS</button>
+          <button class="lower-tab" data-tab="intel" onclick="switchLowerTab('intel')">INTEL</button>
+        </div>
+        <div class="lower" id="lowerGrid"></div>
+      </div>
     </div>
     <div class="col" id="rightRail"></div>
     <div class="col" id="ioRail">
@@ -684,6 +728,8 @@ function renderTopbar(){
     ${mobile ? `<div class="top-center">${getRegionControlsMarkup()}</div>` : ''}
     <div class="top-right">
       <button class="meta-pill perf-pill" onclick="togglePerfMode()" title="Reduce visual effects and start mobile in flat mode">${t('dashboard.perf','PERF')} <span class="v" id="perfStatus">${lowPerfMode?t('dashboard.perfLow','LOW'):t('dashboard.perfHigh','HIGH')}</span></button>
+      <button class="meta-pill perf-pill" id="densityBtn" onclick="toggleDensity()" title="Toggle compact/expanded layout">${t('dashboard.density','DENSITY')} <span class="v">${isDenseMode?'COMPACT':'NORMAL'}</span></button>
+      <button class="meta-pill perf-pill" onclick="showKeyboardHelp()" title="Keyboard shortcuts (?)">⌨ <span class="v">SHORTCUTS</span></button>
       <span class="meta-pill">${t('dashboard.sweep','SWEEP')} <span class="v">${(D.meta.totalDurationMs/1000).toFixed(1)}s</span></span>
       <span class="meta-pill">${d} <span class="v">${timeStr}</span></span>
       <span class="meta-pill">${t('dashboard.sources','SOURCES')} <span class="v">${D.meta.sourcesOk}/${D.meta.sourcesQueried}</span></span>
@@ -723,18 +769,27 @@ function renderLeftRail(){
   const mort=D.fred.find(f=>f.id==='MORTGAGE30US');
   const claims=D.fred.find(f=>f.id==='ICSA');
 
+  const _lpCollapsed = new Set(JSON.parse(localStorage.getItem('crucix_collapsed')||'[]'));
+  const _lpC = id => _lpCollapsed.has(id);
+  const _lpToggle = id => `<button class="panel-toggle" onclick="togglePanel('${id}')" title="Collapse/expand">${_lpC(id)?'▸':'▾'}</button>`;
+
   document.getElementById('leftRail').innerHTML=`
     <div class="g-panel">
-      <div class="sec-head"><h3>${t('panels.sensorGrid','Sensor Grid')}</h3><span class="badge">${t('badges.live','LIVE')}</span></div>
+      <div class="sec-head"><h3>${t('panels.sensorGrid','Sensor Grid')}</h3><div style="display:flex;gap:6px;align-items:center"><span class="badge">${t('badges.live','LIVE')}</span>${_lpToggle('sensor')}</div></div>
+      <div class="panel-body" id="panel-body-sensor" style="display:${_lpC('sensor')?'none':''}">
       ${layers.map(l=>`<div class="layer-item"><div class="layer-left"><div class="ldot ${l.dot}"></div><div><div class="layer-name">${l.name}</div><div class="layer-sub">${l.sub}</div></div></div><div class="layer-count">${l.count}</div></div>`).join('')}
+      </div>
     </div>
     <div class="g-panel">
-      <div class="sec-head"><h3>${t('panels.nuclearWatch','Nuclear Watch')}</h3><span class="badge">${t('badges.radiation','RADIATION')}</span></div>
+      <div class="sec-head"><h3>${t('panels.nuclearWatch','Nuclear Watch')}</h3><div style="display:flex;gap:6px;align-items:center"><span class="badge">${t('badges.radiation','RADIATION')}</span>${_lpToggle('nuke')}</div></div>
+      <div class="panel-body" id="panel-body-nuke" style="display:${_lpC('nuke')?'none':''}">
       <div class="nuke-ok">${allNormal?'&#9679; '+t('nuclear.allSitesNormal','ALL SITES NORMAL'):'&#9888; '+t('nuclear.anomalyDetected','ANOMALY DETECTED')}</div>
       ${nukeHtml}
+      </div>
     </div>
     <div class="g-panel">
-      <div class="sec-head"><h3>${t('panels.riskGauges','Risk Gauges')}</h3><span class="badge">${t('badges.stress','STRESS')}</span></div>
+      <div class="sec-head"><h3>${t('panels.riskGauges','Risk Gauges')}</h3><div style="display:flex;gap:6px;align-items:center"><span class="badge">${t('badges.stress','STRESS')}</span>${_lpToggle('risk')}</div></div>
+      <div class="panel-body" id="panel-body-risk" style="display:${_lpC('risk')?'none':''}">
       <div class="econ-row"><span class="elabel">${t('metrics.vix','VIX')} (Fear)</span><span class="eval" style="color:${vix?.value>20?'var(--warn)':'var(--accent)'}">${vix?.value||'--'}</span></div>
       <div class="econ-row"><span class="elabel">${t('metrics.hySpread','HY Spread')}</span><span class="eval">${hy?.value||'--'}</span></div>
       <div class="econ-row"><span class="elabel">${t('metrics.usdIndex','USD Index')}</span><span class="eval">${usd?.value?.toFixed(1)||'--'}</span></div>
@@ -742,9 +797,11 @@ function renderLeftRail(){
       <div class="econ-row"><span class="elabel">${t('metrics.mortgage30y','30Y Mortgage')}</span><span class="eval">${mort?.value||'--'}%</span></div>
       <div class="econ-row"><span class="elabel">${t('metrics.m2Supply','M2 Supply')}</span><span class="eval">${m2?.value!=null?'$'+(m2.value/1000).toFixed(1)+'T':'--'}</span></div>
       <div class="econ-row"><span class="elabel">${t('metrics.natDebt','Nat. Debt')}</span><span class="eval">$${(parseFloat(D.treasury.totalDebt)/1e12).toFixed(2)}T</span></div>
+      </div>
     </div>
     <div class="g-panel">
-      <div class="sec-head"><h3>${t('panels.spaceWatch','Space Watch')}</h3><span class="badge">${t('badges.orbital','CELESTRAK')}</span></div>
+      <div class="sec-head"><h3>${t('panels.spaceWatch','Space Watch')}</h3><div style="display:flex;gap:6px;align-items:center"><span class="badge">${t('badges.orbital','CELESTRAK')}</span>${_lpToggle('space')}</div></div>
+      <div class="panel-body" id="panel-body-space" style="display:${_lpC('space')?'none':''}">
       ${D.space ? `
         <div class="econ-row"><span class="elabel">New Objects (30d)</span><span class="eval" style="color:var(--accent2)">${D.space.totalNewObjects||0}</span></div>
         <div class="econ-row"><span class="elabel">Military Sats</span><span class="eval">${D.space.militarySats||0}</span></div>
@@ -754,6 +811,7 @@ function renderLeftRail(){
         ${Object.entries(D.space.militaryByCountry||{}).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([c,n])=>`<div class="econ-row"><span class="elabel" style="padding-left:8px">${c}</span><span class="eval" style="font-size:10px">${n} mil sats</span></div>`).join('')}
         ${(D.space.signals||[]).length ? `<div style="margin-top:6px;padding:6px 8px;border:1px solid rgba(68,204,255,0.2);background:rgba(68,204,255,0.04);font-family:var(--mono);font-size:9px;color:var(--accent2);line-height:1.5">${D.space.signals.slice(0,2).join('<br>')}</div>` : ''}
       ` : '<div style="font-family:var(--mono);font-size:10px;color:var(--dim)">NO SPACE DATA</div>'}
+      </div>
     </div>`;
 }
 
@@ -1559,7 +1617,40 @@ function renderLower(){
       ${ideasHtml}
       <div class="disclosure">FOR INFORMATIONAL PURPOSES ONLY. This is not financial advice, a recommendation to buy or sell any security, or a solicitation of any kind. All signal-based observations are derived from publicly available OSINT data and should not be relied upon for investment decisions. Consult a licensed financial advisor before making any investment. Past performance does not guarantee future results.</div>
     </div>`;
-  document.getElementById('lowerGrid').innerHTML=`${tickerPanel}${osintPanel}${macroPanel}${ideasPanel}`;
+  // Metals section (gold, copper, uranium)
+  const metalSymbols = ['GC=F','HG=F','URA'];
+  const metalCards = (mkt.metals||mkt.commodities||[]).filter(q=>metalSymbols.includes(q.symbol)).map(mktCard).join('');
+  const gcpRatio = mkt.goldCopperRatio ? `<div style="font-family:var(--mono);font-size:9px;color:var(--dim);margin-top:4px">Gold/Copper ratio: <span style="color:var(--accent)">${mkt.goldCopperRatio}</span></div>` : '';
+  const metalsSection = metalCards ? `<div style="margin-bottom:8px"><div style="font-family:var(--mono);font-size:9px;color:var(--dim);margin-bottom:4px;letter-spacing:1px">METALS</div><div class="metrics-row">${metalCards}</div>${gcpRatio}</div>` : '';
+
+  // INTEL tab — CISA KEV + OFAC
+  const cisa = D.cisa || {};
+  const ofac = D.ofac || {};
+  const kevRows = (cisa.recent||[]).slice(0,10).map(v=>`<div class="kev-row"><span class="kev-cve">${v.cveID||''}</span><span class="kev-name">${v.vendorProject||''} ${v.product||''} — ${v.vulnerabilityName||''}</span><span class="kev-date">${v.dateAdded||''}</span></div>`).join('') || '<div style="color:var(--dim);font-family:var(--mono);font-size:9px;padding:8px">No KEV data — awaiting sweep</div>';
+  const ofacRows = (ofac.sampleEntries||[]).map(e=>`<div class="ofac-row"><span class="ofac-name">${e.name||e.uid||'—'}</span><span class="ofac-prog">${(e.programs||[]).slice(0,2).join(', ')}</span></div>`).join('') || '<div style="color:var(--dim);font-family:var(--mono);font-size:9px;padding:8px">No OFAC sample data</div>';
+  const osintIntelCards = (D.tg.urgent||[]).slice(0,6).map(p=>`<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04)"><div style="font-family:var(--mono);font-size:9px;color:var(--warn);margin-bottom:2px">${p.channel||'OSINT'} · ${p.urgentFlags?.join(' ')||''}</div><div style="font-size:11px;color:var(--text);line-height:1.3">${cleanText(p.text||'')}</div></div>`).join('') || '<div style="color:var(--dim);font-family:var(--mono);font-size:9px;padding:8px">No urgent OSINT posts</div>';
+  const intelPanel = `<div class="g-panel" style="display:flex;flex-direction:column;gap:10px">
+    <div><div class="sec-head"><h3>CYBER — CISA KEV</h3><span class="badge" style="color:var(--accent2)">${cisa.totalCount||0} TOTAL</span></div>${kevRows}</div>
+    <div><div class="sec-head" style="margin-top:8px"><h3>SANCTIONS — OFAC SDN</h3><span class="badge" style="color:var(--warn)">${ofac.lastUpdated||'—'}</span></div>${ofacRows}</div>
+    <div><div class="sec-head" style="margin-top:8px"><h3>OSINT URGENT POSTS</h3><span class="badge">${D.tg.urgent?.length||0} ITEMS</span></div>${osintIntelCards}</div>
+  </div>`;
+
+  // Metals panel (standalone, shown above macro panel in Markets tab)
+  const metalsPanel = metalCards ? `<div class="g-panel lp-macro">
+    <div class="sec-head"><h3>METALS</h3><span class="badge" style="color:${mkt.timestamp?'var(--accent)':'var(--dim)'}">${mkt.timestamp?'LIVE':'DELAYED'}</span></div>
+    <div class="metrics-row">${metalCards}</div>
+    ${gcpRatio}
+  </div>` : '';
+
+  const activeLowerTabNow = typeof activeLowerTab !== 'undefined' ? activeLowerTab : 'news';
+  const showTab = tab => `display:${activeLowerTabNow===tab?'':'none'}`;
+  document.getElementById('lowerGrid').innerHTML=`
+    <div data-lower-panel="news" style="${showTab('news')}">${tickerPanel}${mobile?osintPanel:''}</div>
+    <div data-lower-panel="markets" style="${showTab('markets')}">${metalsPanel}${macroPanel}</div>
+    <div data-lower-panel="ideas" style="${showTab('ideas')}">${ideasPanel}</div>
+    <div data-lower-panel="intel" style="${showTab('intel')}">${intelPanel}</div>`;
+  // Sync tab bar active state
+  document.querySelectorAll('.lower-tab').forEach(btn=>{btn.classList.toggle('active',btn.dataset.tab===activeLowerTabNow);});
 }
 
 // === DELTA PANEL BUILDER (shared) ===
@@ -1613,6 +1704,76 @@ async function runDiagnostic() {
     btn.disabled = false;
   }
 }
+
+// === LOWER TABS ===
+let activeLowerTab = localStorage.getItem('crucix_lower_tab') || 'news';
+
+function switchLowerTab(tab) {
+  activeLowerTab = tab;
+  localStorage.setItem('crucix_lower_tab', tab);
+  document.querySelectorAll('.lower-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+  document.querySelectorAll('[data-lower-panel]').forEach(p => { p.style.display = p.dataset.lowerPanel === tab ? '' : 'none'; });
+}
+
+// Init tab bar active state immediately (before first render)
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.lower-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === activeLowerTab));
+});
+
+// === COLLAPSIBLE LEFT RAIL PANELS ===
+function togglePanel(id) {
+  const body = document.getElementById('panel-body-' + id);
+  if (!body) return;
+  const btn = body.closest('.g-panel')?.querySelector('.panel-toggle');
+  const isCollapsed = body.style.display === 'none';
+  body.style.display = isCollapsed ? '' : 'none';
+  if (btn) btn.textContent = isCollapsed ? '▾' : '▸';
+  const stored = JSON.parse(localStorage.getItem('crucix_collapsed') || '[]');
+  if (isCollapsed) { const i = stored.indexOf(id); if (i > -1) stored.splice(i, 1); }
+  else if (!stored.includes(id)) stored.push(id);
+  localStorage.setItem('crucix_collapsed', JSON.stringify(stored));
+}
+
+// === COMPACT DENSITY ===
+let isDenseMode = localStorage.getItem('crucix_density') === 'compact';
+if (isDenseMode) document.documentElement.dataset.density = 'compact';
+
+function toggleDensity() {
+  isDenseMode = !isDenseMode;
+  localStorage.setItem('crucix_density', isDenseMode ? 'compact' : 'normal');
+  document.documentElement.dataset.density = isDenseMode ? 'compact' : '';
+  const btn = document.getElementById('densityBtn');
+  if (btn) btn.querySelector('.v').textContent = isDenseMode ? 'COMPACT' : 'NORMAL';
+}
+
+// === KEYBOARD SHORTCUTS ===
+let kbdHelpVisible = false;
+function showKeyboardHelp() {
+  kbdHelpVisible = !kbdHelpVisible;
+  const ov = document.getElementById('kbdHelpOverlay');
+  if (ov) ov.style.display = kbdHelpVisible ? 'flex' : 'none';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input,textarea,select,[contenteditable]')) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  switch(e.key) {
+    case 'g': case 'G': if(typeof toggleMapMode==='function') toggleMapMode(); break;
+    case 'c': case 'C': toggleDensity(); break;
+    case '1': if(typeof setRegion==='function') setRegion('world'); break;
+    case '2': if(typeof setRegion==='function') setRegion('americas'); break;
+    case '3': if(typeof setRegion==='function') setRegion('europe'); break;
+    case '4': if(typeof setRegion==='function') setRegion('middleEast'); break;
+    case '5': if(typeof setRegion==='function') setRegion('asiaPacific'); break;
+    case '6': if(typeof setRegion==='function') setRegion('africa'); break;
+    case 'n': case 'N': switchLowerTab('news'); break;
+    case 'm': case 'M': switchLowerTab('markets'); break;
+    case 'i': case 'I': switchLowerTab('ideas'); break;
+    case 't': case 'T': switchLowerTab('intel'); break;
+    case '?': showKeyboardHelp(); break;
+    case 'Escape': if(kbdHelpVisible) showKeyboardHelp(); break;
+  }
+});
 
 // === RIGHT RAIL ===
 function renderRight(){
@@ -2505,5 +2666,20 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 })();
 </script>
+<div id="kbdHelpOverlay" onclick="if(event.target===this)showKeyboardHelp()">
+  <div class="kbd-panel">
+    <h3>Keyboard Shortcuts</h3>
+    <div class="kbd-row"><span class="kbd-key">G</span><span class="kbd-desc">Toggle globe / flat map</span></div>
+    <div class="kbd-row"><span class="kbd-key">C</span><span class="kbd-desc">Toggle compact / normal density</span></div>
+    <div class="kbd-row"><span class="kbd-key">N</span><span class="kbd-desc">Switch to News tab</span></div>
+    <div class="kbd-row"><span class="kbd-key">M</span><span class="kbd-desc">Switch to Markets tab</span></div>
+    <div class="kbd-row"><span class="kbd-key">I</span><span class="kbd-desc">Switch to Ideas tab</span></div>
+    <div class="kbd-row"><span class="kbd-key">T</span><span class="kbd-desc">Switch to Intel tab</span></div>
+    <div class="kbd-row"><span class="kbd-key">1 – 6</span><span class="kbd-desc">Globe region (World / Americas / Europe / Middle East / Asia-Pac / Africa)</span></div>
+    <div class="kbd-row"><span class="kbd-key">?</span><span class="kbd-desc">Show / hide this panel</span></div>
+    <div class="kbd-row"><span class="kbd-key">Esc</span><span class="kbd-desc">Close this panel</span></div>
+    <div class="kbd-close" onclick="showKeyboardHelp()">Click anywhere outside or press Esc to close</div>
+  </div>
+</div>
 </body>
 </html>
