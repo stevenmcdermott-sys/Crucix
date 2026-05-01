@@ -161,7 +161,7 @@ export async function fullBriefing() {
             articles: ioEnriched.articles,
             narrative_clusters: ioEnriched.narrative_clusters,
             entity_ranking: ioEnriched.entity_ranking,
-            timespan: '1h',
+            timespan: '6h',
             timestamp: ioEnriched.timestamp
           },
           config.llm

@@ -33,8 +33,8 @@ export async function briefing() {
   const startedAt = Date.now();
 
   const [stateMediaR, hostileToneR, timelineR] = await Promise.allSettled([
-    fetchStateMediaUKCoverage({ timespan: '1h', maxRecords: 100 }),
-    fetchAntiUKNarratives({ timespan: '1h', maxRecords: 50 }),
+    fetchStateMediaUKCoverage({ timespan: '6h', maxRecords: 150 }),
+    fetchAntiUKNarratives({ timespan: '6h', maxRecords: 75 }),
     fetchVolumeTimeline({ timespan: '24h' })
   ]);
 
