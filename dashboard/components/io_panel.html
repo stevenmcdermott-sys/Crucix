@@ -290,7 +290,7 @@
   function renderNarratives(narratives) {
     const ul = document.getElementById('io-narratives');
     if (!narratives.length) {
-      ul.innerHTML = '<li class="io-empty">No narratives extracted (GLiNER2 may be offline).</li>';
+      ul.innerHTML = '<li class="io-empty">No narratives available.</li>';
       return;
     }
     ul.innerHTML = narratives.map(n => `

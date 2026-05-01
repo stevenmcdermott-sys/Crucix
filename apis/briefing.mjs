@@ -148,8 +148,11 @@ export async function fullBriefing() {
   try {
     const gdeltIOData = output.sources.GDELT_IO;
     if (gdeltIOData) {
-      console.error('[Crucix] Running IO synthesis (GLiNER + clustering)...');
-      const ioEnriched = await enrichIOBriefing(gdeltIOData);
+      console.error('[Crucix] Running IO synthesis (clustering + Haiku narratives)...');
+      const anthropicApiKey = config.llm?.provider === 'anthropic'
+        ? config.llm?.apiKey
+        : process.env.ANTHROPIC_API_KEY;
+      const ioEnriched = await enrichIOBriefing(gdeltIOData, { anthropicApiKey });
 
       if (config.llm?.provider && config.llm?.apiKey) {
         console.error('[Crucix] Generating threat assessment...');
