@@ -32,8 +32,6 @@ let currentData = null;    // Current synthesized dashboard data
 let lastSweepTime = null;  // Timestamp of last sweep
 let sweepStartedAt = null; // Timestamp when current/last sweep started
 let sweepInProgress = false;
-let lastSourceErrors = []; // Source-level errors from last sweep
-let lastSourceTiming = {}; // Per-source timing from last sweep
 const startTime = Date.now();
 const sseClients = new Set();
 
@@ -278,128 +276,11 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// API: raw FRED probe — shows exactly what FRED returns for VIXCLS
-app.get('/api/debug/fred', async (req, res) => {
-  const key = process.env.FRED_API_KEY;
-  if (!key) return res.json({ error: 'FRED_API_KEY not set' });
-  try {
-    const url = `https://api.stlouisfed.org/fred/series/observations?series_id=VIXCLS&api_key=${key}&file_type=json&sort_order=desc&limit=3&observation_start=2026-01-01`;
-    const r = await fetch(url, { signal: AbortSignal.timeout(15000) });
-    const text = await r.text();
-    let parsed;
-    try { parsed = JSON.parse(text); } catch { parsed = { rawText: text.slice(0, 500) }; }
-    res.json({ httpStatus: r.status, keyPrefix: key.slice(0, 6) + '...', data: parsed });
-  } catch (e) {
-    res.json({ error: e.message });
-  }
-});
-
-// API: source-level status — shows which sources failed and why
-app.get('/api/sources', (req, res) => {
-  const envKeys = ['FRED_API_KEY','EIA_API_KEY','FIRMS_MAP_KEY','AISSTREAM_API_KEY',
-                   'ACLED_EMAIL','ACLED_PASSWORD','LLM_API_KEY','LLM_PROVIDER'];
-  res.json({
-    lastSweep: lastSweepTime,
-    errors: lastSourceErrors,
-    timing: Object.entries(lastSourceTiming).map(([name, t]) => ({ name, status: t.status, ms: t.ms }))
-             .sort((a, b) => (b.ms || 0) - (a.ms || 0)),
-    envPresent: Object.fromEntries(envKeys.map(k => [k, !!process.env[k]])),
-    synthesized: {
-      fredCount: currentData?.fred?.length ?? 'no currentData',
-      fredSample: currentData?.fred?.slice(0, 2) ?? null,
-      spaceOk: !!(currentData?.space?.militarySats > 0 || currentData?.space?.totalNewObjects > 0),
-      spaceSample: currentData?.space ? { totalNewObjects: currentData.space.totalNewObjects, militarySats: currentData.space.militarySats } : null,
-    },
-  });
-});
-
 // API: available locales
 app.get('/api/locales', (req, res) => {
   res.json({
     current: currentLanguage,
     supported: getSupportedLocales(),
-  });
-});
-
-// API: system diagnostic — verifies collection parameters, crawler health, and cadence
-app.get('/api/diagnostic', (req, res) => {
-  const now = Date.now();
-  const checks = [];
-
-  // 1. Verify sweep collection parameters
-  const registeredSources = Object.keys(lastSourceTiming).length || 29;
-  checks.push({
-    id: 'collection_params',
-    label: 'Sweep collection parameters',
-    detail: `Language: ${currentLanguage}, Refresh interval: ${config.refreshIntervalMinutes}min, Sources registered: ${registeredSources}`,
-    ok: true,
-  });
-
-  // 2. Confirm crawler functionality — IO / state-media sources
-  const ioSourceNames = ['GDELT_IO', 'Telegram_IO', 'GDELT', 'Telegram', 'Bluesky', 'Reddit'];
-  const ioTiming = ioSourceNames.map(name => ({
-    name,
-    ...(lastSourceTiming[name] || { status: 'no_data', ms: null }),
-  }));
-  const ioFailed = ioTiming.filter(s => s.status !== 'ok');
-  checks.push({
-    id: 'crawler_health',
-    label: 'Crawler functionality (Russian, Chinese, Iranian state media + amplifier networks)',
-    detail: ioFailed.length === 0
-      ? `All ${ioSourceNames.length} IO collectors operational`
-      : `${ioFailed.length} collector(s) degraded: ${ioFailed.map(s => s.name).join(', ')}`,
-    ok: ioFailed.length === 0,
-    sources: ioTiming,
-  });
-
-  // 3. Check for collection gaps in the last hour
-  let gapOk = true;
-  let gapDetail;
-  if (!lastSweepTime) {
-    gapOk = false;
-    gapDetail = 'No sweep has completed yet';
-  } else {
-    const msSince = now - new Date(lastSweepTime).getTime();
-    const expectedMs = config.refreshIntervalMinutes * 60 * 1000;
-    const overdue = msSince > expectedMs * 1.5;
-    gapOk = !overdue;
-    const minAgo = Math.floor(msSince / 60000);
-    gapDetail = overdue
-      ? `Last sweep ${minAgo}min ago — exceeds ${config.refreshIntervalMinutes}min cadence`
-      : `Last sweep ${minAgo}min ago — within normal ${config.refreshIntervalMinutes}min cadence`;
-  }
-  checks.push({
-    id: 'collection_gaps',
-    label: `Collection gaps (1-hour window: ${lastSweepTime || 'pending'})`,
-    detail: gapDetail,
-    ok: gapOk,
-  });
-
-  // 4. Confirm standard monitoring cadence is active
-  const nextSweep = lastSweepTime
-    ? new Date(new Date(lastSweepTime).getTime() + config.refreshIntervalMinutes * 60000).toISOString()
-    : null;
-  checks.push({
-    id: 'monitoring_cadence',
-    label: 'Standard monitoring cadence',
-    detail: sweepInProgress
-      ? 'Sweep currently in progress'
-      : nextSweep
-        ? `Next sweep scheduled: ${new Date(nextSweep).toLocaleTimeString()}`
-        : 'Awaiting first sweep',
-    ok: !!(lastSweepTime && !sweepInProgress) || sweepInProgress,
-  });
-
-  const allClear = checks.every(c => c.ok);
-  res.json({
-    timestamp: new Date().toISOString(),
-    allClear,
-    checks,
-    summary: allClear
-      ? 'All diagnostic checks passed. No new intelligence to present.'
-      : `${checks.filter(c => !c.ok).length} check(s) require attention.`,
-    lastSweep: lastSweepTime,
-    sweepInProgress,
   });
 });
 
@@ -444,8 +325,6 @@ async function runSweepCycle() {
     // 2. Save to runs/latest.json
     writeFileSync(join(RUNS_DIR, 'latest.json'), JSON.stringify(rawData, null, 2));
     lastSweepTime = new Date().toISOString();
-    lastSourceErrors = rawData.errors || [];
-    lastSourceTiming = rawData.timing || {};
 
     // 3. Synthesize into dashboard format
     console.log('[Crucix] Synthesizing dashboard data...');
@@ -496,8 +375,6 @@ async function runSweepCycle() {
     // Prune old alerted signals
     memory.pruneAlertedSignals();
 
-    // Attach IO intelligence — carry forward previous sweep's data if new sweep didn't produce any
-    synthesized.io_intelligence = rawData.io_intelligence || currentData?.io_intelligence || null;
     currentData = synthesized;
 
     // 6. Push to all connected browsers
@@ -565,7 +442,6 @@ async function start() {
     try {
       const existing = JSON.parse(readFileSync(join(RUNS_DIR, 'latest.json'), 'utf8'));
       const data = await synthesize(existing);
-      data.io_intelligence = existing?.io_intelligence || null;
       currentData = data;
       console.log('[Crucix] Loaded existing data from runs/latest.json — dashboard ready instantly');
       broadcast({ type: 'update', data: currentData });

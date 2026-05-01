@@ -1576,12 +1576,42 @@ function buildDeltaPanel(){
   for(const s of newSigs) rows.push(`<div class="delta-row new"><span class="delta-badge new">NEW</span><span class="delta-label">${s.reason||s.label||s.key}</span></div>`);
   for(const s of escalated){const sev=s.severity==='critical'?'style="color:var(--warn);font-weight:600"':s.severity==='high'?'style="color:#ffab40"':'';const val=s.pctChange!==undefined?`${s.pctChange>0?'+':''}${s.pctChange}%`:`${s.change>0?'+':''}${s.change}`;rows.push(`<div class="delta-row"><span class="delta-badge up">&#9650;</span><span class="delta-label" ${sev}>${s.label}</span><span class="delta-val">${s.from}→${s.to} (${val})</span></div>`);}
   for(const s of deescalated){const val=s.pctChange!==undefined?`${s.pctChange}%`:`${s.change}`;rows.push(`<div class="delta-row"><span class="delta-badge down">&#9660;</span><span class="delta-label">${s.label||s.key}</span><span class="delta-val">${s.from}→${s.to} (${val})</span></div>`);}
-  const deltaHtml=hasDelta?rows.join(''):'<div style="padding:12px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:10px">No changes since last sweep</div>';
+  const deltaHtml=hasDelta?rows.join(''):`<div style="padding:12px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:10px">No changes since last sweep</div><div style="text-align:center;margin-top:4px"><button id="diagBtn" onclick="runDiagnostic()" style="font-family:var(--mono);font-size:9px;background:none;border:1px solid var(--dim);color:var(--dim);padding:3px 10px;cursor:pointer;letter-spacing:0.08em;text-transform:uppercase;transition:color 0.2s,border-color 0.2s" onmouseover="this.style.color='var(--fg)';this.style.borderColor='var(--fg)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--dim)'">EXECUTE SYSTEM CHECK</button></div><div id="diagResult"></div>`;
   return `<div class="g-panel lp-delta">
     <div class="sec-head"><h3>${t('panels.sweepDelta','Sweep Delta')}</h3><span class="badge ${dirClass}">${dirEmoji} ${ds.direction?t('delta.'+ds.direction,ds.direction.toUpperCase()):t('delta.baseline','BASELINE')}</span></div>
     ${hasDelta?`<div style="display:flex;gap:12px;margin-bottom:6px;font-family:var(--mono);font-size:10px"><span style="color:var(--dim)">${t('delta.changes','Changes')}: <span style="color:var(--accent)">${ds.totalChanges}</span></span><span style="color:var(--dim)">${t('delta.critical','Critical')}: <span style="color:${ds.criticalChanges>0?'var(--warn)':'var(--dim)'}">${ds.criticalChanges||0}</span></span>${ds.signalBreakdown?`<span style="color:var(--dim)">${t('delta.new','New')}: <span style="color:#4dd0e1">${ds.signalBreakdown.new}</span> &#8593;${ds.signalBreakdown.escalated} &#8595;${ds.signalBreakdown.deescalated}</span>`:''}</div>`:''}
     <div class="delta-list">${deltaHtml}</div>
   </div>`;
+}
+
+async function runDiagnostic() {
+  const btn = document.getElementById('diagBtn');
+  const result = document.getElementById('diagResult');
+  if (!btn || !result) return;
+  btn.textContent = 'RUNNING...';
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/diagnostic');
+    const d = await r.json();
+    const checkHtml = d.checks.map(c => `
+      <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;font-family:var(--mono);font-size:9px;line-height:1.3">
+        <span style="color:${c.ok?'#4caf50':'var(--warn)'};flex-shrink:0;margin-top:1px">${c.ok?'&#10003;':'&#10007;'}</span>
+        <div>
+          <div style="color:${c.ok?'var(--fg)':'var(--warn)'};margin-bottom:1px">${c.label}</div>
+          <div style="color:var(--dim)">${c.detail}</div>
+        </div>
+      </div>`).join('');
+    const banner = d.allClear
+      ? `<div style="margin-top:8px;padding:5px 8px;background:rgba(76,175,80,0.08);border:1px solid rgba(76,175,80,0.35);color:#4caf50;font-family:var(--mono);font-size:9px;text-align:center;letter-spacing:0.06em">&#10003; DIAGNOSTIC COMPLETE — NO NEW INTELLIGENCE TO PRESENT</div>`
+      : `<div style="margin-top:8px;padding:5px 8px;background:rgba(255,152,0,0.08);border:1px solid rgba(255,152,0,0.35);color:var(--warn);font-family:var(--mono);font-size:9px;text-align:center">&#9650; ${d.summary}</div>`;
+    result.innerHTML = `<div style="padding:8px 10px">${checkHtml}${banner}<div style="margin-top:4px;color:var(--dim);font-family:var(--mono);font-size:8px;text-align:right">checked ${new Date(d.timestamp).toLocaleTimeString()}</div></div>`;
+    btn.textContent = 'RECHECK';
+    btn.disabled = false;
+  } catch(e) {
+    result.innerHTML = `<div style="color:var(--warn);font-size:9px;font-family:var(--mono);padding:8px">Diagnostic failed: ${e.message}</div>`;
+    btn.textContent = 'RETRY';
+    btn.disabled = false;
+  }
 }
 
 // === RIGHT RAIL ===
