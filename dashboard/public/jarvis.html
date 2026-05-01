@@ -879,6 +879,7 @@ function initMap(){
   requestAnimationFrame(() => {
     try {
       initGlobe();
+      plotMarkers();
       setMapLoading(false);
     } catch {
       isFlat = true;

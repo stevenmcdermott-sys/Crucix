@@ -125,24 +125,22 @@ function loadOpenSkyFallback(currentTimestamp) {
   if (!existsSync(runsDir)) return null;
 
   const currentMs = currentTimestamp ? new Date(currentTimestamp).getTime() : NaN;
-  const files = readdirSync(runsDir)
-    .filter(name => /^briefing_.*\.json$/.test(name))
-    .sort()
-    .reverse();
 
-  for (const file of files) {
-    const filePath = join(runsDir, file);
+  // Check runs/latest.json first (raw briefing written every sweep)
+  const latestPath = join(runsDir, 'latest.json');
+  if (existsSync(latestPath)) {
     try {
-      const prior = JSON.parse(readFileSync(filePath, 'utf8'));
+      const prior = JSON.parse(readFileSync(latestPath, 'utf8'));
       const priorTimestamp = prior.sources?.OpenSky?.timestamp || prior.crucix?.timestamp || null;
-      if (priorTimestamp && Number.isFinite(currentMs) && new Date(priorTimestamp).getTime() >= currentMs) continue;
-
       const hotspots = prior.sources?.OpenSky?.hotspots || [];
       if (sumAirHotspots(hotspots) > 0) {
-        return { file, timestamp: priorTimestamp, hotspots };
+        const priorMs = priorTimestamp ? new Date(priorTimestamp).getTime() : NaN;
+        if (!Number.isFinite(currentMs) || !Number.isFinite(priorMs) || priorMs < currentMs) {
+          return { file: 'latest.json', timestamp: priorTimestamp, hotspots };
+        }
       }
     } catch {
-      // Ignore unreadable historical runs and continue searching backward.
+      // fall through to history scan
     }
   }
 
