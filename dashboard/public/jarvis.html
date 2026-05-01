@@ -758,6 +758,7 @@ function renderTopbar(){
       <span class="meta-pill">${d} <span class="v">${timeStr}</span></span>
       <span class="meta-pill">${t('dashboard.sources','SOURCES')} <span class="v">${D.meta.sourcesOk}/${D.meta.sourcesQueried}</span></span>
       ${D.delta?.summary ? `<span class="meta-pill">${t('dashboard.delta','DELTA')} <span class="v">${D.delta.summary.direction==='risk-off'?'&#x25B2; '+t('dashboard.riskOff','RISK-OFF'):D.delta.summary.direction==='risk-on'?'&#x25BC; '+t('dashboard.riskOn','RISK-ON'):'&#x25C6; '+t('dashboard.mixed','MIXED')}</span></span>` : ''}
+      <a href="/theater.html" class="guide-btn" style="text-decoration:none" title="Dedicated per-theater intelligence views">THEATER INTEL</a>
       <button class="guide-btn" onclick="openGlossary()">${t('dashboard.guideBtn','What Signals Mean')}</button>
       <span class="alert-badge">${t('dashboard.highAlert','HIGH ALERT')}</span>
     </div>`;

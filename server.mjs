@@ -456,6 +456,100 @@ app.get('/api/diagnostic', (req, res) => {
   });
 });
 
+// === Theater Intelligence ===
+
+const THEATER_DEFS = {
+  americas:    {
+    name: 'Americas',
+    bounds: (la,ln) => la>-60&&la<72&&ln>-170&&ln<-30,
+    keywords: ['us','usa','united states','america','canada','mexico','brazil','venezuela','colombia','panama','cuba','cartel','pentagon','washington','congress','trump','tariff','border','latin','caribbean','arctic']
+  },
+  europe:      {
+    name: 'Europe',
+    bounds: (la,ln) => la>35&&la<72&&ln>-12&&ln<45,
+    keywords: ['ukraine','russia','nato','eu','europe','european','britain','uk','france','germany','poland','baltic','moldova','belarus','kyiv','moscow','paris','berlin','london','brussels','finland','sweden','norway','crimea','donbas']
+  },
+  middleEast:  {
+    name: 'Middle East',
+    bounds: (la,ln) => la>12&&la<42&&ln>24&&ln<65,
+    keywords: ['iran','israel','gaza','hamas','hezbollah','saudi','yemen','iraq','syria','lebanon','jordan','egypt','turkey','qatar','uae','persian gulf','red sea','houthi','tehran','jerusalem','riyadh','beirut']
+  },
+  asiaPacific: {
+    name: 'Asia-Pacific',
+    bounds: (la,ln) => la>-15&&la<55&&ln>60&&ln<180,
+    keywords: ['china','taiwan','japan','korea','north korea','south korea','india','pakistan','philippines','vietnam','myanmar','south china sea','beijing','tokyo','seoul','pyongyang','delhi','australia','indonesia','pla','prc']
+  },
+  africa:      {
+    name: 'Africa',
+    bounds: (la,ln) => la>-36&&la<38&&ln>-20&&ln<55,
+    keywords: ['africa','nigeria','kenya','ethiopia','somalia','sudan','congo','mali','sahel','mozambique','zimbabwe','south africa','cameroon','chad','wagner','burkina','senegal','rwanda','tanzania','angola']
+  },
+};
+
+function filterForTheater(data, region) {
+  const def = THEATER_DEFS[region];
+  if (!def || !data) return null;
+  const { bounds, keywords, name } = def;
+
+  const matchKw = (text) => {
+    if (!text) return false;
+    const lower = text.toLowerCase();
+    return keywords.some(k => lower.includes(k));
+  };
+
+  const airInRegion    = (data.air||[]).filter(a => a.lat && a.lon && bounds(a.lat, a.lon));
+  const thermalInRegion= (data.thermal||[]).filter(t => t.fires?.some(f => bounds(f.lat, f.lon)));
+  const acledInRegion  = (data.acled?.deadliestEvents||[]).filter(e => e.lat && e.lon && bounds(e.lat, e.lon));
+  const osintInRegion  = (data.tg?.urgent||[]).filter(p => matchKw(p.text)).slice(0, 12);
+  const newsInRegion   = (data.news||[]).filter(n =>
+    (n.lat && n.lon && bounds(n.lat, n.lon)) || matchKw(n.title)
+  ).slice(0, 20);
+
+  return {
+    region, name,
+    timestamp: data.meta?.timestamp || new Date().toISOString(),
+    air:         airInRegion,
+    thermal:     thermalInRegion,
+    chokepoints: (data.chokepoints||[]).filter(c => c.lat && c.lon && bounds(c.lat, c.lon)),
+    osint:       osintInRegion,
+    news:        newsInRegion,
+    acled:       acledInRegion,
+    who:         (data.who||[]).filter(w => matchKw(w.title) || matchKw(w.summary)),
+    noaaAlerts:  (data.noaa?.alerts||[]).filter(a => a.lat && a.lon && bounds(a.lat, a.lon)),
+    gdeltGeoPoints: (data.gdelt?.geoPoints||[]).filter(p => p.lat && p.lon && bounds(p.lat, p.lon)).slice(0, 12),
+    stats: {
+      aircraftTotal:    airInRegion.reduce((s,a) => s+(a.total||0), 0),
+      thermalTotal:     thermalInRegion.reduce((s,t) => s+(t.det||0), 0),
+      osintCount:       osintInRegion.length,
+      newsCount:        newsInRegion.length,
+      acledEvents:      acledInRegion.length,
+      acledFatalities:  acledInRegion.reduce((s,e) => s+(e.fatalities||0), 0),
+      chokepointCount:  (data.chokepoints||[]).filter(c => c.lat && c.lon && bounds(c.lat, c.lon)).length,
+    },
+  };
+}
+
+// API: single theater — regionally filtered data bundle
+app.get('/api/theater/:region', (req, res) => {
+  const { region } = req.params;
+  if (!THEATER_DEFS[region]) {
+    return res.status(400).json({ error: `Unknown region: ${region}. Valid: ${Object.keys(THEATER_DEFS).join(', ')}` });
+  }
+  if (!currentData) return res.status(503).json({ error: 'No data yet — first sweep in progress' });
+  res.json(filterForTheater(currentData, region));
+});
+
+// API: all theaters summary — heat-map overview of all 5
+app.get('/api/theaters', (req, res) => {
+  if (!currentData) return res.status(503).json({ error: 'No data yet' });
+  const theaters = {};
+  for (const region of Object.keys(THEATER_DEFS)) {
+    const f = filterForTheater(currentData, region);
+    theaters[region] = { name: f.name, stats: f.stats, topOsint: f.osint.slice(0,2), topNews: f.news.slice(0,3) };
+  }
+  res.json({ timestamp: currentData.meta?.timestamp, theaters });
+});
+
 // SSE: live updates
 app.get('/events', (req, res) => {
   res.writeHead(200, {

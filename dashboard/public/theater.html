@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DDN — Theater Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#020408;--panel:rgba(6,14,22,0.9);--glass:rgba(10,20,32,0.55);
+  --border:rgba(100,240,200,0.12);--border-bright:rgba(100,240,200,0.3);
+  --text:#e8f4f0;--dim:#6a8a82;--accent:#64f0c8;--accent2:#44ccff;
+  --warn:#ffb84c;--danger:#ff5f63;--mono:'IBM Plex Mono',monospace;--sans:'Space Grotesk',sans-serif;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow-x:hidden}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-bottom:1px solid var(--border);background:var(--panel);backdrop-filter:blur(20px);position:sticky;top:0;z-index:50}
+.brand{font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:0.14em;color:var(--accent)}
+.page-label{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:0.2em;text-transform:uppercase;margin-left:12px;border-left:1px solid var(--border);padding-left:12px}
+.top-right{display:flex;align-items:center;gap:10px}
+.back-btn{font-family:var(--mono);font-size:10px;padding:5px 12px;border:1px solid var(--border);color:var(--dim);background:none;cursor:pointer;text-decoration:none;letter-spacing:0.08em;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px}
+.back-btn:hover{border-color:var(--accent);color:var(--accent)}
+.last-update{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:0.06em}
+.live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);animation:pulse 1.5s ease-in-out infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.sweep-badge{font-family:var(--mono);font-size:9px;padding:3px 8px;border:1px solid rgba(255,95,99,0.3);color:#ffd8d9;background:rgba(255,95,99,0.08);letter-spacing:0.1em;display:none}
+.sweep-badge.active{display:inline-block}
+
+/* THEATER TABS */
+.theater-tabs{display:flex;border-bottom:1px solid var(--border);background:rgba(2,6,12,0.8);overflow-x:auto}
+.theater-tab{padding:11px 22px;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.18s;flex-shrink:0;white-space:nowrap}
+.theater-tab:hover{color:var(--text);background:rgba(100,240,200,0.03)}
+.theater-tab.active{color:var(--accent);border-bottom-color:var(--accent);background:rgba(100,240,200,0.05)}
+.theater-tab .tab-alert{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--danger);margin-left:6px;vertical-align:middle;opacity:0;transition:opacity 0.2s}
+.theater-tab .tab-alert.show{opacity:1}
+
+/* STATS BAR */
+.stats-bar{display:flex;border-bottom:1px solid var(--border);background:rgba(3,8,14,0.9);overflow-x:auto}
+.stat-cell{flex:1;min-width:90px;padding:10px 14px;text-align:center;border-right:1px solid var(--border);transition:background 0.3s}
+.stat-cell:last-child{border-right:none}
+.stat-val{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent);transition:color 0.3s}
+.stat-val.warn{color:var(--warn)}
+.stat-val.danger{color:var(--danger)}
+.stat-lbl{font-family:var(--mono);font-size:8px;color:var(--dim);letter-spacing:0.12em;text-transform:uppercase;margin-top:3px}
+
+/* MAIN LAYOUT */
+.theater-content{display:grid;grid-template-columns:260px 1fr 290px;height:calc(100vh - 122px);overflow:hidden}
+.t-col{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}
+.t-col-left{border-right:1px solid var(--border)}
+.t-col-right{border-left:1px solid var(--border)}
+
+/* PANELS */
+.t-panel{border-bottom:1px solid var(--border);padding:12px 14px;flex-shrink:0}
+.t-panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px}
+.t-panel-title{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--dim)}
+.t-panel-badge{font-family:var(--mono);font-size:9px;padding:2px 7px;border:1px solid var(--border);color:var(--accent);flex-shrink:0}
+.t-panel-badge.warn{border-color:rgba(255,184,76,0.3);color:var(--warn)}
+.t-panel-badge.danger{border-color:rgba(255,95,99,0.3);color:var(--danger)}
+.t-empty{font-family:var(--mono);font-size:10px;color:var(--dim);padding:4px 0;opacity:0.5;font-style:italic}
+
+/* OSINT POSTS */
+.osint-post{padding:8px;border:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.015);margin-bottom:6px;border-radius:1px}
+.osint-post:last-child{margin-bottom:0}
+.osint-channel{font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px}
+.osint-text{font-family:var(--mono);font-size:10px;color:var(--text);line-height:1.55;word-break:break-word}
+.osint-flags{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}
+.osint-flag{font-family:var(--mono);font-size:8px;padding:1px 5px;border:1px solid rgba(255,95,99,0.3);color:#ffd8d9;background:rgba(255,95,99,0.07)}
+
+/* NEWS ITEMS */
+.news-item{padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.news-item:last-child{border-bottom:none}
+.news-source-row{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.news-source{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:0.06em;text-transform:uppercase}
+.news-region-tag{font-family:var(--mono);font-size:8px;padding:1px 5px;border:1px solid var(--border);color:var(--dim)}
+.news-headline{font-size:12px;color:var(--text);line-height:1.45}
+.news-headline a{color:inherit;text-decoration:none}
+.news-headline a:hover{color:var(--accent)}
+
+/* ACLED EVENTS */
+.acled-event{padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.acled-event:last-child{border-bottom:none}
+.acled-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px}
+.acled-loc{font-family:var(--mono);font-size:10px;color:var(--text)}
+.acled-fatal{font-family:var(--mono);font-size:10px;color:var(--danger);font-weight:600}
+.acled-meta{font-family:var(--mono);font-size:9px;color:var(--dim)}
+
+/* GEO ROWS */
+.geo-row{display:flex;align-items:flex-start;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);gap:8px}
+.geo-row:last-child{border-bottom:none}
+.geo-label{font-family:var(--mono);font-size:10px;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.geo-val{font-family:var(--mono);font-size:10px;color:var(--accent);flex-shrink:0}
+.geo-val.warn{color:var(--warn)}
+.geo-val.danger{color:var(--danger)}
+
+/* GDELT clusters */
+.gdelt-item{padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.gdelt-item:last-child{border-bottom:none}
+.gdelt-name{font-size:11px;color:var(--text);line-height:1.4}
+.gdelt-count{font-family:var(--mono);font-size:9px;color:var(--dim);margin-top:2px}
+
+/* WHO */
+.who-item{padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.who-item:last-child{border-bottom:none}
+.who-title{font-size:11px;color:var(--text);line-height:1.4}
+.who-meta{font-family:var(--mono);font-size:9px;color:var(--dim);margin-top:2px}
+
+/* Loading / Error */
+.t-placeholder{display:flex;align-items:center;justify-content:center;height:160px;font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:0.1em;flex-direction:column;gap:8px}
+.t-placeholder .spinner{width:20px;height:20px;border:2px solid rgba(100,240,200,0.1);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* NOAA alert row */
+.noaa-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);gap:8px}
+.noaa-row:last-child{border-bottom:none}
+.noaa-event{font-family:var(--mono);font-size:10px;color:var(--text);flex:1}
+.noaa-sev{font-family:var(--mono);font-size:9px;padding:1px 5px;border:1px solid rgba(255,184,76,0.3);color:var(--warn)}
+
+/* Theater header inside content */
+.theater-name-bar{padding:8px 14px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.1em;color:var(--accent);background:rgba(100,240,200,0.04);border-bottom:1px solid var(--border)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(100,240,200,0.12);border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:rgba(100,240,200,0.25)}
+
+@media(max-width:900px){
+  .theater-content{grid-template-columns:1fr;height:auto;overflow:visible}
+  .t-col{overflow:visible}
+  .t-col-left,.t-col-right{border:none;border-bottom:1px solid var(--border)}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div style="display:flex;align-items:center">
+    <span class="brand">DDN</span>
+    <span class="page-label">THEATER INTELLIGENCE</span>
+  </div>
+  <div class="top-right">
+    <span class="sweep-badge" id="sweepBadge">SWEEP IN PROGRESS</span>
+    <span class="live-dot"></span>
+    <span class="last-update" id="lastUpdate">—</span>
+    <a href="/" class="back-btn">&#8592; MAIN DASHBOARD</a>
+  </div>
+</div>
+
+<div class="theater-tabs" id="theaterTabs">
+  <div class="theater-tab" data-region="americas">AMERICAS<span class="tab-alert" id="alert-americas"></span></div>
+  <div class="theater-tab" data-region="europe">EUROPE<span class="tab-alert" id="alert-europe"></span></div>
+  <div class="theater-tab" data-region="middleEast">MIDDLE EAST<span class="tab-alert" id="alert-middleEast"></span></div>
+  <div class="theater-tab" data-region="asiaPacific">ASIA-PACIFIC<span class="tab-alert" id="alert-asiaPacific"></span></div>
+  <div class="theater-tab" data-region="africa">AFRICA<span class="tab-alert" id="alert-africa"></span></div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-cell"><div class="stat-val" id="s-air">—</div><div class="stat-lbl">AIRCRAFT</div></div>
+  <div class="stat-cell"><div class="stat-val" id="s-thermal">—</div><div class="stat-lbl">THERMAL DET</div></div>
+  <div class="stat-cell"><div class="stat-val" id="s-osint">—</div><div class="stat-lbl">OSINT SIGNALS</div></div>
+  <div class="stat-cell"><div class="stat-val" id="s-news">—</div><div class="stat-lbl">NEWS ITEMS</div></div>
+  <div class="stat-cell"><div class="stat-val" id="s-acled">—</div><div class="stat-lbl">CONFLICT EVENTS</div></div>
+  <div class="stat-cell"><div class="stat-val" id="s-fatal">—</div><div class="stat-lbl">FATALITIES</div></div>
+  <div class="stat-cell"><div class="stat-val" id="s-choke">—</div><div class="stat-lbl">CHOKEPOINTS</div></div>
+</div>
+
+<div class="theater-content">
+  <!-- Left: OSINT + WHO -->
+  <div class="t-col t-col-left" id="colLeft">
+    <div class="t-placeholder"><div class="spinner"></div>Loading theater data…</div>
+  </div>
+  <!-- Center: News + ACLED + GDELT -->
+  <div class="t-col t-col-center" id="colCenter"></div>
+  <!-- Right: Air + Thermal + Maritime + NOAA -->
+  <div class="t-col t-col-right" id="colRight"></div>
+</div>
+
+<script>
+const THEATERS = {
+  americas:    'Americas',
+  europe:      'Europe',
+  middleEast:  'Middle East',
+  asiaPacific: 'Asia-Pacific',
+  africa:      'Africa',
+};
+
+let activeRegion = (location.hash.replace('#','') || 'europe');
+if (!THEATERS[activeRegion]) activeRegion = 'europe';
+
+let currentTheaterData = null;
+let allSummary = null;
+
+// ─── Utilities ────────────────────────────────────────────────────────────
+
+function fmt(n) {
+  if (n == null || n === '') return '—';
+  return Number(n).toLocaleString();
+}
+
+function timeAgo(ts) {
+  if (!ts) return '—';
+  const diff = (Date.now() - new Date(ts)) / 1000;
+  if (diff < 60)   return Math.floor(diff) + 's ago';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  return Math.floor(diff/3600) + 'h ago';
+}
+
+function cleanText(t) {
+  return (t||'')
+    .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '')
+    .replace(/[\u{2600}-\u{27FF}]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Tab Management ────────────────────────────────────────────────────────
+
+function setActiveTab(region) {
+  activeRegion = region;
+  history.replaceState(null,'',location.pathname + '#' + region);
+  document.querySelectorAll('.theater-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.region === region);
+  });
+  loadTheater(region);
+}
+
+document.querySelectorAll('.theater-tab').forEach(tab => {
+  tab.addEventListener('click', () => setActiveTab(tab.dataset.region));
+});
+
+// ─── Data Loading ──────────────────────────────────────────────────────────
+
+async function loadTheater(region) {
+  setLoading(true);
+  try {
+    const res = await fetch('/api/theater/' + region);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'HTTP ' + res.status }));
+      throw new Error(err.error || 'HTTP ' + res.status);
+    }
+    const data = await res.json();
+    currentTheaterData = data;
+    render(data);
+  } catch (err) {
+    renderError(err.message);
+  }
+}
+
+async function loadAllSummary() {
+  try {
+    const res = await fetch('/api/theaters');
+    if (!res.ok) return;
+    allSummary = await res.json();
+    updateTabAlerts(allSummary);
+  } catch {}
+}
+
+function updateTabAlerts(summary) {
+  if (!summary?.theaters) return;
+  for (const [region, data] of Object.entries(summary.theaters)) {
+    const dot = document.getElementById('alert-' + region);
+    if (!dot) continue;
+    const hasAlert = (data.stats?.osintCount || 0) > 3 || (data.stats?.acledFatalities || 0) > 50;
+    dot.classList.toggle('show', hasAlert);
+  }
+}
+
+// ─── Render ────────────────────────────────────────────────────────────────
+
+function setLoading(on) {
+  if (on) {
+    document.getElementById('colLeft').innerHTML = '<div class="t-placeholder"><div class="spinner"></div>Loading…</div>';
+    document.getElementById('colCenter').innerHTML = '';
+    document.getElementById('colRight').innerHTML = '';
+  }
+}
+
+function renderError(msg) {
+  document.getElementById('colLeft').innerHTML = `<div class="t-placeholder" style="color:var(--danger)">Error: ${esc(msg)}</div>`;
+  document.getElementById('colCenter').innerHTML = '';
+  document.getElementById('colRight').innerHTML = '';
+}
+
+function render(data) {
+  if (!data) return;
+
+  document.getElementById('lastUpdate').textContent = timeAgo(data.timestamp);
+
+  // Stats bar
+  const s = data.stats || {};
+  setStatCell('s-air',    s.aircraftTotal,   false);
+  setStatCell('s-thermal', s.thermalTotal,   s.thermalTotal > 50000, false);
+  setStatCell('s-osint',  s.osintCount,      false, s.osintCount > 3);
+  setStatCell('s-news',   s.newsCount,       false, false);
+  setStatCell('s-acled',  s.acledEvents,     s.acledEvents > 15, false);
+  setStatCell('s-fatal',  s.acledFatalities, s.acledFatalities > 100, false);
+  setStatCell('s-choke',  s.chokepointCount, false, false);
+
+  renderLeft(data);
+  renderCenter(data);
+  renderRight(data);
+}
+
+function setStatCell(id, val, isDanger, isWarn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = fmt(val);
+  el.className = 'stat-val' + (isDanger ? ' danger' : isWarn ? ' warn' : '');
+}
+
+// ─── Left Column: OSINT + WHO ──────────────────────────────────────────────
+
+function renderLeft(data) {
+  const osint = data.osint || [];
+  const who   = data.who   || [];
+  let html = '';
+
+  // OSINT panel
+  html += `<div class="t-panel">
+    <div class="t-panel-head">
+      <span class="t-panel-title">OSINT SIGNALS</span>
+      <span class="t-panel-badge ${osint.length > 5 ? 'warn' : ''}">${osint.length}</span>
+    </div>`;
+  if (osint.length) {
+    html += osint.map(p => {
+      const flags = (p.urgentFlags||[]).map(f => `<span class="osint-flag">${esc(f)}</span>`).join('');
+      return `<div class="osint-post">
+        <div class="osint-channel">${esc(p.channel||'OSINT')}</div>
+        <div class="osint-text">${esc(cleanText(p.text||'').substring(0,200))}</div>
+        ${flags ? `<div class="osint-flags">${flags}</div>` : ''}
+      </div>`;
+    }).join('');
+  } else {
+    html += `<div class="t-empty">No urgent OSINT signals in this theater</div>`;
+  }
+  html += `</div>`;
+
+  // WHO panel
+  if (who.length) {
+    html += `<div class="t-panel">
+      <div class="t-panel-head">
+        <span class="t-panel-title">WHO DISEASE ALERTS</span>
+        <span class="t-panel-badge">${who.length}</span>
+      </div>`;
+    html += who.map(w => `<div class="who-item">
+      <div class="who-title">${esc((w.title||'').substring(0,120))}</div>
+      <div class="who-meta">${esc(w.date||'—')}${w.summary ? ' · ' + esc(w.summary.substring(0,80)) : ''}</div>
+    </div>`).join('');
+    html += `</div>`;
+  }
+
+  document.getElementById('colLeft').innerHTML = html;
+}
+
+// ─── Center Column: News + ACLED + GDELT ──────────────────────────────────
+
+function renderCenter(data) {
+  const news  = data.news  || [];
+  const acled = data.acled || [];
+  const gdelt = data.gdeltGeoPoints || [];
+  let html = '';
+
+  // News panel
+  html += `<div class="t-panel">
+    <div class="t-panel-head">
+      <span class="t-panel-title">NEWS HEADLINES</span>
+      <span class="t-panel-badge">${news.length}</span>
+    </div>`;
+  if (news.length) {
+    html += news.slice(0,18).map(n => {
+      const headline = n.url
+        ? `<a href="${esc(n.url)}" target="_blank" rel="noopener noreferrer">${esc((n.title||'').substring(0,110))}</a>`
+        : esc((n.title||'').substring(0,110));
+      return `<div class="news-item">
+        <div class="news-source-row">
+          <span class="news-source">${esc(n.source||'—')}</span>
+          ${n.region ? `<span class="news-region-tag">${esc(n.region)}</span>` : ''}
+        </div>
+        <div class="news-headline">${headline}</div>
+      </div>`;
+    }).join('');
+  } else {
+    html += `<div class="t-empty">No news matched for this theater</div>`;
+  }
+  html += `</div>`;
+
+  // ACLED panel
+  html += `<div class="t-panel">
+    <div class="t-panel-head">
+      <span class="t-panel-title">CONFLICT EVENTS (ACLED)</span>
+      <span class="t-panel-badge ${acled.length > 10 ? 'danger' : ''}">${acled.length}</span>
+    </div>`;
+  if (acled.length) {
+    html += acled.slice(0,12).map(e => `<div class="acled-event">
+      <div class="acled-header">
+        <span class="acled-loc">${esc(e.country||'—')} · ${esc(e.location||'')}</span>
+        <span class="acled-fatal">${e.fatalities||0} KIA</span>
+      </div>
+      <div class="acled-meta">${esc(e.date||'—')} · ${esc(e.type||'—')}</div>
+    </div>`).join('');
+  } else {
+    html += `<div class="t-empty">No ACLED events in theater bounds</div>`;
+  }
+  html += `</div>`;
+
+  // GDELT event clusters
+  if (gdelt.length) {
+    html += `<div class="t-panel">
+      <div class="t-panel-head">
+        <span class="t-panel-title">MEDIA EVENT CLUSTERS (GDELT)</span>
+        <span class="t-panel-badge">${gdelt.length}</span>
+      </div>`;
+    html += gdelt.slice(0,10).map(g => `<div class="gdelt-item">
+      <div class="gdelt-name">${esc((g.name||'Event cluster').substring(0,100))}</div>
+      <div class="gdelt-count">${g.count||1} report${g.count !== 1 ? 's' : ''}</div>
+    </div>`).join('');
+    html += `</div>`;
+  }
+
+  document.getElementById('colCenter').innerHTML = html;
+}
+
+// ─── Right Column: Air + Thermal + Maritime + NOAA ────────────────────────
+
+function renderRight(data) {
+  const air        = data.air         || [];
+  const thermal    = data.thermal     || [];
+  const chokepoints= data.chokepoints || [];
+  const noaa       = data.noaaAlerts  || [];
+  const s          = data.stats       || {};
+  let html = '';
+
+  // Air activity
+  html += `<div class="t-panel">
+    <div class="t-panel-head">
+      <span class="t-panel-title">AIR ACTIVITY</span>
+      <span class="t-panel-badge">${fmt(s.aircraftTotal)} AIRCRAFT</span>
+    </div>`;
+  if (air.length) {
+    html += air.map(a => `<div class="geo-row">
+      <span class="geo-label">${esc(a.region)}</span>
+      <span class="geo-val">${a.total} ac · ${a.highAlt} hi-alt</span>
+    </div>`).join('');
+  } else {
+    html += `<div class="t-empty">No tracked air activity in theater</div>`;
+  }
+  html += `</div>`;
+
+  // Thermal
+  html += `<div class="t-panel">
+    <div class="t-panel-head">
+      <span class="t-panel-title">THERMAL DETECTIONS (FIRMS)</span>
+      <span class="t-panel-badge ${s.thermalTotal > 50000 ? 'warn' : ''}">${fmt(s.thermalTotal)}</span>
+    </div>`;
+  if (thermal.length) {
+    html += thermal.slice(0,8).map(t => `<div class="geo-row">
+      <span class="geo-label">${esc(t.region)}</span>
+      <span class="geo-val ${t.det>10000?'warn':''}">${fmt(t.det)} det</span>
+    </div>`).join('');
+  } else {
+    html += `<div class="t-empty">No thermal hotspots in theater</div>`;
+  }
+  html += `</div>`;
+
+  // Maritime chokepoints
+  html += `<div class="t-panel">
+    <div class="t-panel-head">
+      <span class="t-panel-title">MARITIME CHOKEPOINTS</span>
+      <span class="t-panel-badge">${chokepoints.length}</span>
+    </div>`;
+  if (chokepoints.length) {
+    html += chokepoints.map(c => `<div class="geo-row">
+      <span class="geo-label">${esc(c.label)}</span>
+      <span class="geo-val">${esc(c.note||'Monitored')}</span>
+    </div>`).join('');
+  } else {
+    html += `<div class="t-empty">No monitored chokepoints in theater</div>`;
+  }
+  html += `</div>`;
+
+  // NOAA weather alerts
+  if (noaa.length) {
+    html += `<div class="t-panel">
+      <div class="t-panel-head">
+        <span class="t-panel-title">WEATHER ALERTS (NOAA)</span>
+        <span class="t-panel-badge warn">${noaa.length}</span>
+      </div>`;
+    html += noaa.map(a => `<div class="noaa-row">
+      <span class="noaa-event">${esc(a.event||'Alert')}</span>
+      <span class="noaa-sev">${esc(a.severity||'—')}</span>
+    </div>`).join('');
+    html += `</div>`;
+  }
+
+  document.getElementById('colRight').innerHTML = html;
+}
+
+// ─── SSE ──────────────────────────────────────────────────────────────────
+
+function connectSSE() {
+  const es = new EventSource('/events');
+  es.addEventListener('message', e => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'sweep_start') {
+        document.getElementById('sweepBadge').classList.add('active');
+      } else if (msg.type === 'update') {
+        document.getElementById('sweepBadge').classList.remove('active');
+        loadTheater(activeRegion);
+        loadAllSummary();
+      }
+    } catch {}
+  });
+  es.onerror = () => setTimeout(connectSSE, 5000);
+}
+
+// ─── Init ──────────────────────────────────────────────────────────────────
+
+// Set correct active tab without triggering a full re-load via setActiveTab
+document.querySelector('[data-region="' + activeRegion + '"]')?.classList.add('active');
+
+// Initial data load
+loadTheater(activeRegion);
+loadAllSummary();
+connectSSE();
+
+// Refresh "X ago" counter every 30s
+setInterval(() => {
+  if (currentTheaterData) {
+    document.getElementById('lastUpdate').textContent = timeAgo(currentTheaterData.timestamp);
+  }
+}, 30000);
+
+// Handle browser back/forward hash navigation
+window.addEventListener('hashchange', () => {
+  const region = location.hash.replace('#','');
+  if (THEATERS[region] && region !== activeRegion) {
+    activeRegion = region;
+    document.querySelectorAll('.theater-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.region === region);
+    });
+    loadTheater(region);
+  }
+});
+</script>
+</body>
+</html>
