@@ -147,12 +147,14 @@ export async function fullBriefing() {
   // ─── IO Synthesis Layer ───
   try {
     const gdeltIOData = output.sources.GDELT_IO;
-    if (gdeltIOData) {
+    const telegramIOData = output.sources.Telegram_IO;
+
+    if (gdeltIOData || telegramIOData) {
       console.error('[Crucix] Running IO synthesis (clustering + Haiku narratives)...');
       const anthropicApiKey = config.llm?.provider === 'anthropic'
         ? config.llm?.apiKey
         : process.env.ANTHROPIC_API_KEY;
-      const ioEnriched = await enrichIOBriefing(gdeltIOData, { anthropicApiKey });
+      const ioEnriched = await enrichIOBriefing(gdeltIOData, { anthropicApiKey, telegramIO: telegramIOData });
 
       if (config.llm?.provider && config.llm?.apiKey) {
         console.error('[Crucix] Generating threat assessment...');
@@ -160,10 +162,11 @@ export async function fullBriefing() {
           {
             ...ioEnriched,
             summary: ioEnriched.source_data,
-            by_actor: gdeltIOData.by_actor,
+            by_actor: gdeltIOData?.by_actor,
             articles: ioEnriched.articles,
             narrative_clusters: ioEnriched.narrative_clusters,
             entity_ranking: ioEnriched.entity_ranking,
+            telegram_io: telegramIOData,
             timespan: '6h',
             timestamp: ioEnriched.timestamp
           },

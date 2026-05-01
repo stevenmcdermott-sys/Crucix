@@ -12,6 +12,7 @@ ANALYTIC STANDARDS:
 - Never invent narratives that are not in the source data
 - Note when narratives appear to be coordinated across multiple actors
 - Identify specific UK targets (institutions, persons, policies) where present
+- ALWAYS produce substantive analysis — even with limited data, synthesise what is available and note confidence accordingly. Never return "insufficient data" as a headline; instead note low confidence and assess what the available signals do suggest.
 
 OUTPUT FORMAT - return ONLY valid JSON, no preamble or markdown:
 {
@@ -124,6 +125,24 @@ function buildAnalystBriefing(sweepData) {
     lines.push('## DOMINANT NARRATIVES (LLM-extracted)');
     topNarratives.forEach((n, i) => {
       lines.push(`${i + 1}. "${n.claim}" — mentions: ${n.mentions}, confidence: ${n.confidence}`);
+    });
+    lines.push('');
+  }
+
+  const tgIO = sweepData.telegram_io;
+  if (tgIO?.posts?.length > 0) {
+    lines.push('## STATE MEDIA TELEGRAM CHANNELS (last 6h)');
+    lines.push(`Channels: ${tgIO.summary?.channels_succeeded || 0}/${tgIO.summary?.channels_attempted || 0} online · Posts: ${tgIO.summary?.posts_count || tgIO.posts.length}`);
+    if (tgIO.by_actor) {
+      for (const [actor, count] of Object.entries(tgIO.by_actor)) {
+        if (count > 0) lines.push(`  ${actor.toUpperCase()}: ${count} posts`);
+      }
+    }
+    lines.push('');
+    lines.push('Sample posts (most recent):');
+    tgIO.posts.slice(0, 20).forEach(p => {
+      const text = (p.description || p.title || '').slice(0, 150).replace(/\n/g, ' ');
+      lines.push(`  [${(p.actor || '?').toUpperCase()}] [${p.channel_name || p.channel}] ${text}`);
     });
     lines.push('');
   }

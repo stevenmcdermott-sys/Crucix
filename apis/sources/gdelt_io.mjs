@@ -73,12 +73,14 @@ async function fetchStateMediaUKCoverage(opts = {}) {
   const timespan = opts.timespan || '1h';
   const maxRecords = Math.min(opts.maxRecords || 100, 250);
 
+  // Broad UK keyword search across all sources — domain: filters exceed GDELT's
+  // free-tier query complexity limit and return 0 results. State media attribution
+  // is handled post-fetch by attributeFromDomain(); Telegram IO handles the
+  // primary state media channel monitoring.
   const ukQuery = `(${UK_KEYWORDS.join(' OR ')})`;
-  const domainQuery = ALL_STATE_DOMAINS.map(d => `domain:${d}`).join(' OR ');
-  const fullQuery = `${ukQuery} AND (${domainQuery})`;
 
   const url = new URL(GDELT_BASE);
-  url.searchParams.set('query', fullQuery);
+  url.searchParams.set('query', ukQuery);
   url.searchParams.set('mode', 'artlist');
   url.searchParams.set('maxrecords', String(maxRecords));
   url.searchParams.set('format', 'json');

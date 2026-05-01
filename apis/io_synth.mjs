@@ -8,11 +8,28 @@ import { clusterNarratives } from './narrative_cluster.mjs';
 const HAIKU_MODEL = 'claude-haiku-4-5-20251001';
 
 export async function enrichIOBriefing(gdeltIOData, opts = {}) {
-  if (!gdeltIOData) {
-    return { error: 'No GDELT IO data', enriched: false };
+  if (!gdeltIOData && !opts.telegramIO) {
+    return { error: 'No IO data', enriched: false };
   }
 
-  const articles = gdeltIOData.articles || [];
+  const gdeltArticles = gdeltIOData?.articles || [];
+
+  // Convert Telegram IO posts to article format and merge — this is the primary
+  // state-media signal when GDELT domain filters are unavailable
+  const tgPosts = opts.telegramIO?.posts || [];
+  const tgArticles = tgPosts.map(p => ({
+    title: p.title || p.description?.slice(0, 120) || '(no title)',
+    url: p.link || `https://t.me/${p.channel}`,
+    domain: `t.me/${p.channel}`,
+    actor: p.actor,
+    language: 'en',
+    tone: -2,
+    snippet: p.description?.slice(0, 200) || '',
+    channel_name: p.channel_name,
+    tier: p.tier
+  }));
+
+  const articles = [...gdeltArticles, ...tgArticles];
   const narrativeClusters = clusterNarratives(articles);
 
   let topNarratives = [];
@@ -25,7 +42,9 @@ export async function enrichIOBriefing(gdeltIOData, opts = {}) {
     timestamp: new Date().toISOString(),
     source_data: {
       total_articles: articles.length,
-      by_actor: gdeltIOData.by_actor,
+      gdelt_articles: gdeltArticles.length,
+      telegram_posts: tgArticles.length,
+      by_actor: gdeltIOData?.by_actor,
     },
     articles,
     narrative_clusters: narrativeClusters,
