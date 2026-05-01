@@ -3,7 +3,7 @@
 // Serves the Jarvis dashboard, runs sweep cycle, pushes live updates via SSE
 
 import express from 'express';
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, unlinkSync, statSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
@@ -21,10 +21,47 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = __dirname;
 const RUNS_DIR = join(ROOT, 'runs');
 const MEMORY_DIR = join(RUNS_DIR, 'memory');
+const HISTORY_DIR = join(RUNS_DIR, 'history');
+const HISTORY_MAX = 96; // 24h at 15-min cadence
 
 // Ensure directories exist
-for (const dir of [RUNS_DIR, MEMORY_DIR, join(MEMORY_DIR, 'cold')]) {
+for (const dir of [RUNS_DIR, MEMORY_DIR, join(MEMORY_DIR, 'cold'), HISTORY_DIR]) {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+}
+
+function saveHistory(data) {
+  try {
+    const ts = new Date().toISOString().replace(/:/g, '-').replace(/\..+/, '');
+    writeFileSync(join(HISTORY_DIR, `${ts}.json`), JSON.stringify(data));
+    // Prune oldest files beyond HISTORY_MAX
+    const files = readdirSync(HISTORY_DIR)
+      .filter(f => f.endsWith('.json'))
+      .sort();
+    if (files.length > HISTORY_MAX) {
+      files.slice(0, files.length - HISTORY_MAX).forEach(f => {
+        try { unlinkSync(join(HISTORY_DIR, f)); } catch {}
+      });
+    }
+  } catch (err) {
+    console.error('[Crucix] History save failed (non-fatal):', err.message);
+  }
+}
+
+function listHistory() {
+  try {
+    return readdirSync(HISTORY_DIR)
+      .filter(f => f.endsWith('.json'))
+      .sort()
+      .reverse()
+      .map(f => {
+        const id = f.replace('.json', '');
+        const ts = id.replace(/T(\d{2})-(\d{2})-(\d{2})$/, 'T$1:$2:$3');
+        const size = statSync(join(HISTORY_DIR, f)).size;
+        return { id, timestamp: ts, sizeKb: Math.round(size / 1024) };
+      });
+  } catch {
+    return [];
+  }
 }
 
 // === State ===
@@ -321,6 +358,22 @@ app.get('/api/locales', (req, res) => {
   });
 });
 
+// API: history list — available sweep snapshots for playback
+app.get('/api/history', (req, res) => {
+  res.json({ runs: listHistory() });
+});
+
+// API: history fetch — single sweep snapshot by id
+app.get('/api/history/:id', (req, res) => {
+  const file = join(HISTORY_DIR, `${req.params.id}.json`);
+  if (!existsSync(file)) return res.status(404).json({ error: 'Run not found' });
+  try {
+    res.json(JSON.parse(readFileSync(file, 'utf8')));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // API: system diagnostic — verifies collection parameters, crawler health, and cadence
 app.get('/api/diagnostic', (req, res) => {
   const now = Date.now();
@@ -499,6 +552,9 @@ async function runSweepCycle() {
     // Attach IO intelligence — carry forward previous sweep's data if new sweep didn't produce any
     synthesized.io_intelligence = rawData.io_intelligence || currentData?.io_intelligence || null;
     currentData = synthesized;
+
+    // Save to history for playback and correlation engine
+    saveHistory(currentData);
 
     // 6. Push to all connected browsers
     broadcast({ type: 'update', data: currentData });

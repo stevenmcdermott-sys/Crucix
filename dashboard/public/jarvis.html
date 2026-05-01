@@ -127,6 +127,30 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .map-popup .pp-text{font-size:11px;line-height:1.4;color:#c8d8d2}
 .map-popup .pp-meta{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:6px}
 .map-popup .pp-close{position:absolute;top:6px;right:8px;background:none;border:none;color:var(--dim);font-size:14px;cursor:pointer}
+/* Region Brief Modal */
+#regionModal{position:fixed;inset:0;z-index:1100;display:none;align-items:flex-start;justify-content:flex-end;pointer-events:none}
+#regionModal.show{display:flex;pointer-events:auto}
+.rm-backdrop{position:fixed;inset:0;background:rgba(2,4,8,0.5);backdrop-filter:blur(4px);cursor:pointer}
+.rm-panel{position:relative;width:min(520px,92vw);height:100vh;background:rgba(4,10,16,0.98);border-left:1px solid var(--border-bright);overflow-y:auto;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.28s cubic-bezier(0.22,1,0.36,1);box-shadow:-20px 0 60px rgba(0,0,0,0.5)}
+#regionModal.show .rm-panel{transform:translateX(0)}
+.rm-header{padding:16px 18px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(4,10,16,0.98);z-index:2}
+.rm-type-badge{font-family:var(--mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.rm-title{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--accent);letter-spacing:0.06em;margin-bottom:2px}
+.rm-coords{font-family:var(--mono);font-size:9px;color:var(--dim)}
+.rm-close{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;line-height:1;padding:4px 8px;transition:color 0.15s}.rm-close:hover{color:var(--accent)}
+.rm-body{padding:14px 18px;flex:1;display:flex;flex-direction:column;gap:14px}
+.rm-section{border:1px solid var(--border);background:rgba(255,255,255,0.02);padding:10px 12px}
+.rm-section-title{font-family:var(--mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.rm-section-badge{color:var(--dim);font-size:9px}
+.rm-row{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:11px;line-height:1.3}
+.rm-row:last-child{border-bottom:none}
+.rm-row .rl{color:var(--dim)}
+.rm-row .rv{font-family:var(--mono);color:var(--text);font-size:10px}
+.rm-post{padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:10px;line-height:1.4;color:#c8d8d2}
+.rm-post:last-child{border-bottom:none}
+.rm-post .rp-src{font-family:var(--mono);font-size:8px;color:var(--warn);margin-bottom:2px}
+.rm-theater-label{font-family:var(--mono);font-size:10px;color:var(--accent2);padding:6px 0;text-align:center;letter-spacing:0.06em}
+.rm-empty{font-family:var(--mono);font-size:9px;color:var(--dim);padding:4px 0;font-style:italic}
 .glossary-overlay{position:fixed;inset:0;z-index:1200;background:rgba(2,6,10,0.72);backdrop-filter:blur(10px);opacity:0;pointer-events:none;transition:opacity 0.25s ease}
 .glossary-overlay.show{opacity:1;pointer-events:auto}
 .glossary-panel{position:absolute;top:18px;right:18px;width:min(420px,calc(100vw - 32px));max-height:calc(100vh - 36px);display:flex;flex-direction:column;border:1px solid rgba(68,204,255,0.22);background:rgba(5,12,19,0.96);box-shadow:0 18px 48px rgba(0,0,0,0.45)}
@@ -896,7 +920,7 @@ function initGlobe(){
     .pointRadius(d => d.size || 0.3)
     .pointColor(d => d.color)
     .pointLabel(d => `<b>${d.popHead||''}</b><br><span style="opacity:0.7">${d.popMeta||''}</span>`)
-    .onPointClick((pt, ev) => { showPopup(ev, pt.popHead, pt.popText, pt.popMeta, pt.lat, pt.lng, pt.alt); })
+    .onPointClick((pt, ev) => { openRegionBrief(pt); })
     .onPointHover(pt => { document.getElementById('globeViz').style.cursor = pt ? 'pointer' : 'grab'; })
     // Arcs layer (flight corridors)
     .arcColor(d => d.color)
@@ -1243,6 +1267,126 @@ function showPopup(event,head,text,meta,lat,lng,alt){
   popup.classList.add('show');
 }
 function closePopup(){document.getElementById('mapPopup').classList.remove('show')}
+
+// === REGION BRIEF MODAL ===
+
+const THEATER_BOUNDS = [
+  { id:'europe',     name:'Europe',         test:(la,ln)=>la>35&&la<72&&ln>-12&&ln<42 },
+  { id:'middleEast', name:'Middle East',    test:(la,ln)=>la>12&&la<42&&ln>24&&ln<65 },
+  { id:'asiaPacific',name:'Asia-Pacific',   test:(la,ln)=>la>-15&&la<55&&ln>60&&ln<180 },
+  { id:'americas',   name:'Americas',       test:(la,ln)=>ln>=-170&&ln<-30 },
+  { id:'africa',     name:'Africa',         test:(la,ln)=>la>-36&&la<38&&ln>-20&&ln<55 },
+];
+
+function inferTheater(lat, lng) {
+  for (const t of THEATER_BOUNDS) {
+    if (t.test(lat, lng)) return t;
+  }
+  return { id:'world', name:'Global' };
+}
+
+function openRegionBrief(pt) {
+  if (!D) return;
+  closePopup();
+  const theater = inferTheater(pt.lat, pt.lng);
+  const modal = document.getElementById('regionModal');
+  document.getElementById('rmType').textContent = (pt.type||'SIGNAL').toUpperCase() + ' · ' + theater.name.toUpperCase();
+  document.getElementById('rmTitle').textContent = pt.popHead || '—';
+  document.getElementById('rmCoords').textContent = `${pt.lat?.toFixed(2)}°, ${pt.lng?.toFixed(2)}°`;
+
+  const sections = [];
+
+  // Direct signal detail (what was clicked)
+  sections.push(`<div class="rm-section">
+    <div class="rm-section-title">SIGNAL DETAIL <span class="rm-section-badge">${(pt.popMeta||'').toUpperCase()}</span></div>
+    <div style="font-size:11px;line-height:1.5;color:#c8d8d2">${pt.popText||'—'}</div>
+  </div>`);
+
+  // Air traffic in theater
+  const airInTheater = (D.air||[]).filter(a => a.lat && a.lon && inferTheater(a.lat, a.lon).id === theater.id);
+  if (airInTheater.length) {
+    const rows = airInTheater.map(a=>`<div class="rm-row"><span class="rl">${a.region}</span><span class="rv">${a.total} aircraft · ${a.highAlt} high-alt</span></div>`).join('');
+    sections.push(`<div class="rm-section"><div class="rm-section-title">AIR ACTIVITY <span class="rm-section-badge">${airInTheater.reduce((s,a)=>s+a.total,0)} TRACKED</span></div>${rows}</div>`);
+  }
+
+  // Thermal in theater
+  const thermalInTheater = (D.thermal||[]).filter(t => {
+    if (!t.fires?.length) return false;
+    return t.fires.some(f => inferTheater(f.lat, f.lon).id === theater.id);
+  });
+  if (thermalInTheater.length) {
+    const rows = thermalInTheater.map(t=>`<div class="rm-row"><span class="rl">${t.region}</span><span class="rv">${t.det.toLocaleString()} det · ${t.hc} high-conf</span></div>`).join('');
+    sections.push(`<div class="rm-section"><div class="rm-section-title">THERMAL <span class="rm-section-badge">FIRMS SATELLITE</span></div>${rows}</div>`);
+  }
+
+  // Maritime chokepoints in theater
+  const cpInTheater = (D.chokepoints||[]).filter(c => c.lat && c.lon && inferTheater(c.lat, c.lon).id === theater.id);
+  if (cpInTheater.length) {
+    const rows = cpInTheater.map(c=>`<div class="rm-row"><span class="rl">${c.label}</span><span class="rv">${c.note||'Monitored'}</span></div>`).join('');
+    sections.push(`<div class="rm-section"><div class="rm-section-title">MARITIME <span class="rm-section-badge">${cpInTheater.length} CHOKEPOINTS</span></div>${rows}</div>`);
+  }
+
+  // OSINT urgent posts for theater
+  const theaterKeywords = {
+    europe: ['ukraine','russia','nato','europe','eu ','berlin','paris','london','kyiv','moscow'],
+    middleEast: ['iran','israel','gaza','beirut','iraq','syria','saudi','gulf','hormuz','yemeni'],
+    asiaPacific: ['china','taiwan','beijing','seoul','tokyo','pacific','india','korea','strait'],
+    americas: ['us ','usa','america','washington','canada','brazil','mexico','latin'],
+    africa: ['africa','sudan','ethiopia','nigeria','sahel','mali','congo','kenya'],
+    world: []
+  };
+  const kw = theaterKeywords[theater.id] || [];
+  const osintPosts = kw.length
+    ? [...(D.tg?.urgent||[]), ...(D.tg?.topPosts||[])].filter(p => {
+        const txt = (p.text||'').toLowerCase();
+        return kw.some(k => txt.includes(k));
+      }).slice(0, 5)
+    : (D.tg?.urgent||[]).slice(0, 5);
+  if (osintPosts.length) {
+    const rows = osintPosts.map(p=>`<div class="rm-post"><div class="rp-src">${p.channel||'OSINT'} · ${p.urgentFlags?.join(' ')||''}</div>${cleanText(p.text?.substring(0,200)||'')}</div>`).join('');
+    sections.push(`<div class="rm-section"><div class="rm-section-title">OSINT <span class="rm-section-badge">${osintPosts.length} POSTS</span></div>${rows}</div>`);
+  }
+
+  // News headlines for theater
+  const newsItems = kw.length
+    ? (D.newsFeed||[]).filter(n => {
+        const txt = ((n.headline||'')+(n.source||'')).toLowerCase();
+        return kw.some(k => txt.includes(k));
+      }).slice(0, 6)
+    : (D.newsFeed||[]).slice(0, 6);
+  if (newsItems.length) {
+    const rows = newsItems.map(n=>`<div class="rm-post"><div class="rp-src" style="color:var(--accent2)">${(n.source||'').substring(0,14)} · ${n.timestamp?getAge(n.timestamp):''}</div>${cleanText(n.headline||'')}</div>`).join('');
+    sections.push(`<div class="rm-section"><div class="rm-section-title">NEWS <span class="rm-section-badge">${newsItems.length} ITEMS</span></div>${rows}</div>`);
+  }
+
+  // Economic context relevant to theater
+  const econContext = [];
+  if (['middleEast','asiaPacific'].includes(theater.id)) {
+    const wti = D.energy?.wti; const brent = D.energy?.brent;
+    if (wti) econContext.push({l:'WTI Crude', v:`$${wti}`});
+    if (brent) econContext.push({l:'Brent Crude', v:`$${brent}`});
+  }
+  if (['europe','world'].includes(theater.id)) {
+    const natgas = D.energy?.natgas;
+    if (natgas) econContext.push({l:'Nat Gas', v:`$${natgas}/MMBtu`});
+  }
+  const vix = D.markets?.vix;
+  if (vix) econContext.push({l:'VIX', v:vix.value?.toFixed(1)});
+  if (econContext.length) {
+    const rows = econContext.map(e=>`<div class="rm-row"><span class="rl">${e.l}</span><span class="rv">${e.v}</span></div>`).join('');
+    sections.push(`<div class="rm-section"><div class="rm-section-title">MARKET CONTEXT</div>${rows}</div>`);
+  }
+
+  document.getElementById('rmBody').innerHTML = sections.join('') ||
+    '<div class="rm-empty">No cross-source data available for this location.</div>';
+  modal.classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeRegionBrief() {
+  document.getElementById('regionModal').classList.remove('show');
+  document.body.style.overflow = '';
+}
 
 // === MAP CONTROLS ===
 function toggleFlights() {
@@ -2666,6 +2810,18 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 })();
 </script>
+<div id="regionModal">
+  <div class="rm-backdrop" onclick="closeRegionBrief()"></div>
+  <div class="rm-panel">
+    <div class="rm-header">
+      <div class="rm-type-badge" id="rmType">—</div>
+      <div class="rm-title" id="rmTitle">—</div>
+      <div class="rm-coords" id="rmCoords">—</div>
+      <button class="rm-close" onclick="closeRegionBrief()">&times;</button>
+    </div>
+    <div class="rm-body" id="rmBody"></div>
+  </div>
+</div>
 <div id="kbdHelpOverlay" onclick="if(event.target===this)showKeyboardHelp()">
   <div class="kbd-panel">
     <h3>Keyboard Shortcuts</h3>
