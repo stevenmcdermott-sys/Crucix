@@ -119,16 +119,13 @@ function buildAnalystBriefing(sweepData) {
     lines.push('');
   }
 
-  if (sweepData.entity_ranking) {
-    const targets = [
-      ...(sweepData.entity_ranking.target_institution || []),
-      ...(sweepData.entity_ranking.target_person || [])
-    ].sort((a, b) => b.count - a.count).slice(0, 8);
-    if (targets.length > 0) {
-      lines.push('## TOP UK TARGETS (from NER)');
-      targets.forEach(t => lines.push(`- ${t.text} (${t.count} mentions)`));
-      lines.push('');
-    }
+  const topNarratives = sweepData.top_narratives || [];
+  if (topNarratives.length > 0) {
+    lines.push('## DOMINANT NARRATIVES (LLM-extracted)');
+    topNarratives.forEach((n, i) => {
+      lines.push(`${i + 1}. "${n.claim}" — mentions: ${n.mentions}, confidence: ${n.confidence}`);
+    });
+    lines.push('');
   }
 
   lines.push('---');

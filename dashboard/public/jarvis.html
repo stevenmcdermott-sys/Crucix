@@ -690,8 +690,8 @@ function isWeakMobileDevice(){
 }
 
 function shouldStartFlat(){
-  if(!isMobileLayout()) return true;
-  return lowPerfMode || isWeakMobileDevice();
+  if(isMobileLayout()) return lowPerfMode || isWeakMobileDevice();
+  return false;
 }
 
 function setMapLoading(show, text='Initializing 3D Globe'){

@@ -109,7 +109,7 @@ async function fetchAntiUKNarratives(opts = {}) {
   const ukQuery = `(${UK_KEYWORDS.join(' OR ')})`;
 
   const url = new URL(GDELT_BASE);
-  url.searchParams.set('query', `${ukQuery} tone<-3`);
+  url.searchParams.set('query', `${ukQuery} tone<-1`);
   url.searchParams.set('mode', 'artlist');
   url.searchParams.set('maxrecords', String(maxRecords));
   url.searchParams.set('format', 'json');
