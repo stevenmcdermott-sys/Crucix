@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crucix — Intelligence Engineering Showcase</title>
+<meta name="description" content="27 OSINT sources. 7 LLM providers. Real-time cross-domain signal correlation. A data science deep-dive into Crucix.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#020408;--panel:rgba(6,14,22,0.88);--glass:rgba(10,20,32,0.6);
+  --border:rgba(100,240,200,0.12);--border-bright:rgba(100,240,200,0.3);
+  --text:#e8f4f0;--dim:#6a8a82;--accent:#64f0c8;--accent2:#44ccff;
+  --warn:#ffb84c;--danger:#ff5f63;--purple:#b388ff;
+  --mono:'IBM Plex Mono',monospace;--sans:'Space Grotesk',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);overflow-x:hidden;line-height:1.6}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:rgba(100,240,200,0.2);border-radius:2px}
+
+/* ── GLOBAL BG ── */
+.bg-grid{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(100,240,200,0.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(100,240,200,0.025) 1px,transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse at 50% 30%,black 20%,transparent 70%)}
+.scanline{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;opacity:0.4}
+.scanline::after{content:'';position:absolute;left:0;width:100%;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(100,240,200,0.08),transparent);
+  animation:scanMove 6s linear infinite}
+@keyframes scanMove{0%{top:-2px}100%{top:100%}}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 40px;
+  background:rgba(2,4,8,0.8);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border)}
+.nav-brand{font-family:var(--mono);font-weight:700;font-size:15px;
+  letter-spacing:0.14em;color:var(--accent);text-decoration:none}
+.nav-brand span{color:var(--dim);font-weight:300}
+.nav-links{display:flex;align-items:center;gap:28px;list-style:none}
+.nav-links a{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--dim);text-decoration:none;transition:color 0.2s}
+.nav-links a:hover{color:var(--accent)}
+.nav-cta{padding:7px 18px;border:1px solid rgba(100,240,200,0.3);
+  color:var(--accent);font-family:var(--mono);font-size:11px;
+  letter-spacing:0.1em;text-transform:uppercase;text-decoration:none;
+  transition:all 0.2s;background:rgba(100,240,200,0.06)}
+.nav-cta:hover{background:rgba(100,240,200,0.14);border-color:var(--accent)}
+
+/* ── SECTIONS ── */
+section{position:relative;z-index:1}
+.container{max-width:1200px;margin:0 auto;padding:0 40px}
+.section-label{font-family:var(--mono);font-size:11px;letter-spacing:0.2em;
+  text-transform:uppercase;color:var(--accent);margin-bottom:12px;opacity:0.8}
+.section-title{font-size:clamp(28px,4vw,48px);font-weight:700;line-height:1.15;margin-bottom:20px}
+.section-sub{font-size:16px;color:var(--dim);max-width:620px;line-height:1.7}
+.reveal{opacity:0;transform:translateY(32px)}
+
+/* ── HERO ── */
+#hero{height:100vh;min-height:700px;display:flex;align-items:center;
+  justify-content:center;text-align:center;position:relative;overflow:hidden}
+#hero-canvas{position:absolute;inset:0;z-index:0}
+.hero-content{position:relative;z-index:2;max-width:820px;padding:0 24px}
+.hero-eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:0.25em;
+  text-transform:uppercase;color:var(--accent);margin-bottom:24px;
+  display:flex;align-items:center;justify-content:center;gap:12px}
+.hero-eyebrow::before,.hero-eyebrow::after{content:'';flex:1;max-width:60px;
+  height:1px;background:linear-gradient(90deg,transparent,var(--accent))}
+.hero-eyebrow::after{background:linear-gradient(90deg,var(--accent),transparent)}
+.hero-title{font-size:clamp(42px,7vw,88px);font-weight:700;line-height:1.05;
+  margin-bottom:16px;letter-spacing:-0.02em}
+.hero-title .line2{color:var(--accent);display:block}
+.hero-tagline{font-family:var(--mono);font-size:clamp(13px,2vw,18px);
+  color:var(--dim);margin-bottom:40px;letter-spacing:0.04em;min-height:28px}
+.hero-tagline .cursor{display:inline-block;width:2px;height:1.1em;
+  background:var(--accent);margin-left:3px;vertical-align:middle;
+  animation:blink 1s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.hero-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.btn-primary{padding:14px 32px;background:var(--accent);color:#020408;
+  font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:0.1em;
+  text-transform:uppercase;text-decoration:none;transition:all 0.25s;
+  box-shadow:0 0 24px rgba(100,240,200,0.3)}
+.btn-primary:hover{background:#7fffd4;box-shadow:0 0 36px rgba(100,240,200,0.5)}
+.btn-ghost{padding:14px 32px;border:1px solid var(--border-bright);
+  color:var(--text);font-family:var(--mono);font-size:13px;font-weight:600;
+  letter-spacing:0.1em;text-transform:uppercase;text-decoration:none;
+  transition:all 0.25s;background:rgba(255,255,255,0.03)}
+.btn-ghost:hover{border-color:var(--accent2);color:var(--accent2);
+  background:rgba(68,204,255,0.07)}
+.hero-scroll{position:absolute;bottom:36px;left:50%;transform:translateX(-50%);
+  font-family:var(--mono);font-size:10px;letter-spacing:0.15em;
+  text-transform:uppercase;color:var(--dim);display:flex;flex-direction:column;
+  align-items:center;gap:8px;z-index:2}
+.scroll-line{width:1px;height:40px;background:linear-gradient(to bottom,var(--accent),transparent);
+  animation:scrollPulse 2s ease-in-out infinite}
+@keyframes scrollPulse{0%,100%{opacity:0.3;transform:scaleY(1)}50%{opacity:1;transform:scaleY(1.2)}}
+
+/* ── PROBLEM ── */
+#problem{padding:120px 0 100px}
+.problem-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;margin-top:60px}
+.problem-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.p-stat{padding:24px;border:1px solid var(--border);background:var(--glass);backdrop-filter:blur(16px);
+  position:relative;overflow:hidden}
+.p-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(100,240,200,0.2),transparent)}
+.p-stat .num{font-family:var(--mono);font-size:38px;font-weight:700;color:var(--accent);
+  line-height:1;margin-bottom:8px}
+.p-stat .label{font-size:12px;color:var(--dim);letter-spacing:0.05em}
+.problem-copy p{font-size:16px;color:var(--dim);line-height:1.8;margin-bottom:16px}
+.problem-copy p strong{color:var(--text);font-weight:600}
+.problem-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+.prob-badge{font-family:var(--mono);font-size:11px;padding:6px 12px;
+  border:1px solid var(--border);color:var(--dim);letter-spacing:0.06em}
+.prob-badge.solved{border-color:rgba(100,240,200,0.25);color:var(--accent);
+  background:rgba(100,240,200,0.06)}
+
+/* ── STATS BANNER ── */
+#stats-banner{padding:60px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  background:var(--glass);backdrop-filter:blur(16px)}
+.stats-row{display:flex;justify-content:space-around;flex-wrap:wrap;gap:40px}
+.stat-block{text-align:center}
+.stat-num{font-family:var(--mono);font-size:clamp(42px,6vw,72px);font-weight:700;
+  color:var(--accent);line-height:1;display:block}
+.stat-unit{font-family:var(--mono);font-size:16px;color:var(--accent2);font-weight:500}
+.stat-label{font-size:13px;color:var(--dim);letter-spacing:0.08em;
+  text-transform:uppercase;margin-top:8px}
+
+/* ── CRUCIX SHOWCASE ── */
+#showcase{padding:120px 0}
+.screenshot-gallery{margin:60px 0;display:grid;grid-template-columns:1fr 1fr;
+  grid-template-rows:auto auto;gap:16px}
+.sc-main{grid-column:1 / -1;position:relative;overflow:hidden;
+  border:1px solid var(--border);cursor:pointer;group:true}
+.sc-main img,.sc-thumb img{width:100%;height:100%;object-fit:cover;display:block;
+  transition:transform 0.5s ease,filter 0.5s ease;filter:brightness(0.9) saturate(1.1)}
+.sc-main:hover img,.sc-thumb:hover img{transform:scale(1.03);filter:brightness(1) saturate(1.2)}
+.sc-thumb{border:1px solid var(--border);overflow:hidden;cursor:pointer;position:relative}
+.sc-label{position:absolute;bottom:0;left:0;right:0;padding:10px 14px;
+  font-family:var(--mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;
+  color:var(--dim);background:linear-gradient(to top,rgba(2,4,8,0.9),transparent);
+  transition:color 0.2s}
+.sc-main:hover .sc-label,.sc-thumb:hover .sc-label{color:var(--accent)}
+.sc-main-label{font-size:13px;padding:14px 18px}
+
+/* FEATURES GRID */
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:60px}
+.feat-card{padding:28px;border:1px solid var(--border);background:var(--glass);
+  backdrop-filter:blur(16px);position:relative;overflow:hidden;transition:border-color 0.3s,background 0.3s}
+.feat-card:hover{border-color:rgba(100,240,200,0.28);background:rgba(10,20,32,0.8)}
+.feat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(100,240,200,0.15),transparent)}
+.feat-icon{font-size:28px;margin-bottom:16px;display:block}
+.feat-title{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:0.08em;
+  text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.feat-desc{font-size:14px;color:var(--dim);line-height:1.7}
+
+/* TECH CHIPS */
+.tech-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:48px}
+.chip{font-family:var(--mono);font-size:11px;padding:6px 14px;
+  border:1px solid var(--border);color:var(--dim);letter-spacing:0.06em;
+  transition:all 0.2s;cursor:default}
+.chip:hover{border-color:rgba(100,240,200,0.3);color:var(--accent);
+  background:rgba(100,240,200,0.06)}
+.chip.accent{border-color:rgba(100,240,200,0.25);color:var(--accent);
+  background:rgba(100,240,200,0.05)}
+.chip.blue{border-color:rgba(68,204,255,0.25);color:var(--accent2);
+  background:rgba(68,204,255,0.05)}
+
+/* ── ARCHITECTURE ── */
+#architecture{padding:120px 0;background:rgba(4,10,18,0.6)}
+.arch-diagram{margin-top:72px;display:flex;flex-direction:column;gap:0;position:relative}
+.arch-connector{width:2px;height:32px;background:linear-gradient(to bottom,var(--accent),rgba(100,240,200,0.2));
+  margin:0 auto;position:relative}
+.arch-connector::after{content:'▼';position:absolute;bottom:-14px;left:50%;
+  transform:translateX(-50%);font-size:10px;color:var(--accent);opacity:0.6}
+.tier{display:grid;grid-template-columns:140px 1fr;gap:0;
+  border:1px solid var(--border);background:var(--glass);backdrop-filter:blur(16px);
+  position:relative;overflow:hidden;transition:border-color 0.3s}
+.tier:hover{border-color:rgba(100,240,200,0.25)}
+.tier::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(100,240,200,0.12),transparent)}
+.tier-label{padding:24px 20px;display:flex;flex-direction:column;
+  justify-content:center;align-items:center;text-align:center;
+  border-right:1px solid var(--border);background:rgba(100,240,200,0.03)}
+.tier-num{font-family:var(--mono);font-size:10px;letter-spacing:0.15em;
+  text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.tier-name{font-family:var(--mono);font-size:12px;font-weight:700;
+  letter-spacing:0.1em;text-transform:uppercase}
+.tier-name.t1{color:var(--danger)}
+.tier-name.t2{color:var(--warn)}
+.tier-name.t3{color:#69f0ae}
+.tier-name.t4{color:var(--purple)}
+.tier-name.t5{color:var(--accent2)}
+.tier-body{padding:20px 28px}
+.tier-sources{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.src-tag{font-family:var(--mono);font-size:10px;padding:3px 9px;
+  border:1px solid rgba(255,255,255,0.08);color:var(--dim);letter-spacing:0.04em;
+  background:rgba(255,255,255,0.02)}
+.tier-desc{font-size:13px;color:var(--dim);line-height:1.6;margin-top:8px}
+
+/* ── DATA SCIENCE DEPTH ── */
+#depth{padding:120px 0}
+.depth-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:72px}
+.depth-card{padding:36px;border:1px solid var(--border);background:var(--glass);
+  backdrop-filter:blur(16px);position:relative;overflow:hidden}
+.depth-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0.4}
+.depth-card.wide{grid-column:1 / -1}
+.depth-card-head{display:flex;align-items:flex-start;gap:16px;margin-bottom:20px}
+.depth-icon{width:44px;height:44px;border:1px solid rgba(100,240,200,0.2);
+  display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;
+  background:rgba(100,240,200,0.05)}
+.depth-title{font-family:var(--mono);font-size:14px;font-weight:700;
+  letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+.depth-sub{font-size:12px;color:var(--dim)}
+.depth-body{font-size:14px;color:var(--dim);line-height:1.75}
+.depth-body strong{color:var(--text);font-weight:600}
+.code-snippet{margin-top:16px;padding:16px;background:rgba(0,0,0,0.4);
+  border:1px solid rgba(255,255,255,0.06);font-family:var(--mono);
+  font-size:12px;color:#a8d8c8;line-height:1.8;overflow-x:auto}
+.code-snippet .kw{color:var(--accent2)}
+.code-snippet .str{color:var(--warn)}
+.code-snippet .cm{color:var(--dim);font-style:italic}
+
+/* ALERT TIERS */
+.alert-tiers{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap}
+.at{padding:10px 20px;font-family:var(--mono);font-size:12px;font-weight:700;
+  letter-spacing:0.12em;text-transform:uppercase;border:1px solid;display:flex;
+  align-items:center;gap:8px}
+.at-dot{width:8px;height:8px;border-radius:50%;animation:pulse-blink 1.5s infinite}
+@keyframes pulse-blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.at.flash{border-color:rgba(255,95,99,0.4);color:#ffd8d9;background:rgba(255,95,99,0.08)}
+.at.flash .at-dot{background:var(--danger);box-shadow:0 0 8px var(--danger)}
+.at.priority{border-color:rgba(255,184,76,0.4);color:#fff3d8;background:rgba(255,184,76,0.07)}
+.at.priority .at-dot{background:var(--warn);box-shadow:0 0 8px var(--warn)}
+.at.routine{border-color:rgba(100,240,200,0.25);color:#d0f5ed;background:rgba(100,240,200,0.05)}
+.at.routine .at-dot{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+
+/* PROVIDER GRID */
+.provider-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:16px}
+.provider{padding:12px;border:1px solid var(--border);background:rgba(255,255,255,0.02);
+  text-align:center;font-family:var(--mono);font-size:11px;color:var(--dim);
+  letter-spacing:0.06em;transition:all 0.2s}
+.provider:hover{border-color:rgba(100,240,200,0.25);color:var(--accent);
+  background:rgba(100,240,200,0.04)}
+.provider .pmark{font-size:18px;display:block;margin-bottom:6px}
+
+/* MEMORY DIAGRAM */
+.memory-flow{display:flex;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}
+.mem-node{padding:12px 18px;border:1px solid var(--border);font-family:var(--mono);
+  font-size:11px;color:var(--dim);text-align:center;background:rgba(255,255,255,0.02);
+  flex:1;min-width:110px}
+.mem-node .mn-val{font-size:20px;font-weight:700;color:var(--accent);display:block;margin-bottom:4px}
+.mem-arrow{font-family:var(--mono);color:var(--dim);font-size:18px}
+
+/* ── LIVE DEMO ── */
+#demo{padding:120px 0;background:rgba(4,10,18,0.5)}
+.demo-wrapper{margin-top:60px;position:relative}
+.demo-frame-wrap{border:1px solid var(--border);background:var(--panel);
+  position:relative;overflow:hidden}
+.demo-topbar{padding:10px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;background:rgba(6,14,22,0.95)}
+.demo-dot{width:12px;height:12px;border-radius:50%}
+.demo-dot.r{background:#ff5f57}
+.demo-dot.y{background:#febc2e}
+.demo-dot.g{background:#28c840}
+.demo-url{font-family:var(--mono);font-size:12px;color:var(--dim);
+  flex:1;text-align:center;letter-spacing:0.04em}
+.demo-url span{color:var(--accent)}
+.demo-iframe-wrap{position:relative;padding-bottom:56.25%;height:0;overflow:hidden}
+.demo-iframe-wrap iframe{position:absolute;top:0;left:0;width:100%;height:100%;
+  border:none;background:var(--bg)}
+.demo-fallback{display:none;position:absolute;inset:0;
+  background:url('../docs/dashboard.png') center/cover no-repeat;
+  filter:brightness(0.7)}
+.demo-fallback-msg{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:12px;
+  background:rgba(2,4,8,0.7);backdrop-filter:blur(4px)}
+.demo-cta-row{display:flex;gap:16px;margin-top:28px;flex-wrap:wrap}
+
+/* ── ARSENAL ── */
+#arsenal{padding:120px 0}
+.arsenal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  gap:16px;margin-top:64px}
+.skill-card{padding:24px 20px;border:1px solid var(--border);background:var(--glass);
+  backdrop-filter:blur(12px);position:relative;overflow:hidden;transition:all 0.3s;
+  display:flex;flex-direction:column;align-items:flex-start;gap:12px}
+.skill-card:hover{border-color:rgba(100,240,200,0.28);background:rgba(10,24,38,0.8);
+  transform:translateY(-2px)}
+.skill-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform 0.4s ease}
+.skill-card:hover::after{transform:scaleX(1)}
+.skill-icon{font-size:26px}
+.skill-name{font-family:var(--mono);font-size:12px;font-weight:700;
+  letter-spacing:0.08em;text-transform:uppercase;color:var(--text)}
+.skill-desc{font-size:12px;color:var(--dim);line-height:1.6}
+.skill-bar-wrap{width:100%;height:3px;background:rgba(255,255,255,0.07);margin-top:auto}
+.skill-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));
+  border-radius:2px;width:0;transition:width 1.5s ease}
+
+/* ── GITHUB CARD ── */
+#github-section{padding:100px 0;background:rgba(4,10,18,0.6)}
+.gh-card{max-width:700px;margin:60px auto 0;padding:40px;
+  border:1px solid var(--border);background:var(--glass);backdrop-filter:blur(20px);
+  position:relative;overflow:hidden;text-align:center}
+.gh-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent)}
+.gh-avatar{width:72px;height:72px;border-radius:50%;border:2px solid rgba(100,240,200,0.25);
+  margin:0 auto 20px;display:flex;align-items:center;justify-content:center;
+  font-size:32px;background:rgba(100,240,200,0.06)}
+.gh-name{font-family:var(--mono);font-size:22px;font-weight:700;
+  color:var(--accent);margin-bottom:4px;letter-spacing:0.06em}
+.gh-handle{font-family:var(--mono);font-size:13px;color:var(--dim);
+  margin-bottom:20px;letter-spacing:0.04em}
+.gh-desc{font-size:15px;color:var(--dim);line-height:1.7;margin-bottom:28px}
+.gh-stats{display:flex;justify-content:center;gap:40px;margin-bottom:32px}
+.gh-stat{text-align:center}
+.gh-stat-num{font-family:var(--mono);font-size:28px;font-weight:700;
+  color:var(--accent);display:block}
+.gh-stat-label{font-size:12px;color:var(--dim);letter-spacing:0.06em}
+.gh-tags{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:32px}
+.gh-tag{font-family:var(--mono);font-size:10px;padding:4px 10px;
+  border:1px solid rgba(68,204,255,0.2);color:var(--accent2);
+  background:rgba(68,204,255,0.04);letter-spacing:0.06em}
+.gh-btns{display:flex;gap:12px;justify-content:center}
+
+/* ── FOOTER ── */
+footer{padding:60px 0 40px;border-top:1px solid var(--border)}
+.footer-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:24px}
+.footer-brand{font-family:var(--mono);font-size:16px;font-weight:700;
+  letter-spacing:0.14em;color:var(--accent)}
+.footer-brand small{font-size:11px;color:var(--dim);letter-spacing:0.06em;
+  font-weight:300;display:block;margin-top:4px}
+.footer-links{display:flex;gap:24px;flex-wrap:wrap}
+.footer-links a{font-family:var(--mono);font-size:11px;letter-spacing:0.08em;
+  text-transform:uppercase;color:var(--dim);text-decoration:none;transition:color 0.2s}
+.footer-links a:hover{color:var(--accent)}
+.footer-copy{font-family:var(--mono);font-size:11px;color:var(--dim);
+  letter-spacing:0.06em;margin-top:28px;text-align:center;
+  border-top:1px solid var(--border);padding-top:24px}
+.footer-copy a{color:var(--dim);text-decoration:none}
+.footer-copy a:hover{color:var(--accent)}
+
+/* ── MODAL (screenshot lightbox) ── */
+#lightbox{position:fixed;inset:0;z-index:200;background:rgba(2,4,8,0.96);
+  display:flex;align-items:center;justify-content:center;opacity:0;
+  pointer-events:none;transition:opacity 0.3s;padding:24px}
+#lightbox.open{opacity:1;pointer-events:all}
+#lightbox img{max-width:100%;max-height:90vh;object-fit:contain;
+  border:1px solid var(--border)}
+#lightbox-close{position:absolute;top:20px;right:28px;font-family:var(--mono);
+  font-size:24px;color:var(--dim);cursor:pointer;transition:color 0.2s;background:none;border:none}
+#lightbox-close:hover{color:var(--accent)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .problem-grid{grid-template-columns:1fr}
+  .features-grid{grid-template-columns:1fr 1fr}
+  .depth-grid{grid-template-columns:1fr}
+  .depth-card.wide{grid-column:auto}
+  .tier{grid-template-columns:100px 1fr}
+  .gh-stats{gap:24px}
+  nav{padding:12px 20px}
+  .nav-links{display:none}
+  .container{padding:0 20px}
+}
+@media(max-width:600px){
+  .features-grid{grid-template-columns:1fr}
+  .screenshot-gallery{grid-template-columns:1fr}
+  .sc-main{grid-column:auto}
+  .stats-row .stat-block:nth-child(n+4){display:none}
+  .arsenal-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="scanline"></div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox">
+  <button id="lightbox-close" aria-label="Close">&#10005;</button>
+  <img id="lightbox-img" src="" alt="Screenshot">
+</div>
+
+<!-- NAV -->
+<nav>
+  <a href="#hero" class="nav-brand">CRUCIX <span>/ Intelligence Engine</span></a>
+  <ul class="nav-links">
+    <li><a href="#problem">The Problem</a></li>
+    <li><a href="#showcase">Showcase</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#depth">Data Science</a></li>
+    <li><a href="#arsenal">Stack</a></li>
+  </ul>
+  <a href="https://www.crucix.live" target="_blank" rel="noopener" class="nav-cta">Live Demo</a>
+</nav>
+
+<!-- ═══════════════════════════════════════ HERO ═══════════════════════════════════════ -->
+<section id="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-eyebrow">Intelligence Engineering</div>
+    <h1 class="hero-title">
+      Real-Time Global<br>
+      <span class="line2">Signal Intelligence</span>
+    </h1>
+    <p class="hero-tagline">
+      <span id="typewriter"></span><span class="cursor"></span>
+    </p>
+    <div class="hero-btns">
+      <a href="https://www.crucix.live" target="_blank" rel="noopener" class="btn-primary">Live Demo</a>
+      <a href="https://github.com/stevenmcdermott-sys/crucix" target="_blank" rel="noopener" class="btn-ghost">View on GitHub</a>
+    </div>
+  </div>
+  <div class="hero-scroll">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ PROBLEM ═══════════════════════════════════════ -->
+<section id="problem">
+  <div class="container">
+    <div class="section-label reveal">The Challenge</div>
+    <h2 class="section-title reveal">Intelligence is scattered.<br>Crucix unifies it.</h2>
+    <div class="problem-grid">
+      <div class="problem-copy reveal">
+        <p>Global intelligence exists across <strong>dozens of fragmented public sources</strong> — satellite feeds, economic databases, conflict trackers, social signals, radiation monitors, and live market data. Each requires separate accounts, authentication, and bespoke parsers.</p>
+        <p>Analysts spend <strong>hours aggregating data</strong> that's already stale by the time it's correlated. The signal is buried in noise. The connections between domains are missed entirely.</p>
+        <p>Crucix solves this with a <strong>zero-cloud, self-hosted intelligence terminal</strong> — 27 sources queried in parallel every 15 minutes, synthesised by an LLM, and delivered as actionable insights.</p>
+        <div class="problem-badges">
+          <span class="prob-badge">Fragmented Sources</span>
+          <span class="prob-badge">Manual Aggregation</span>
+          <span class="prob-badge">Stale Data</span>
+          <span class="prob-badge">No Cross-Domain Correlation</span>
+          <span class="prob-badge solved">Solved by Crucix</span>
+        </div>
+      </div>
+      <div class="problem-stat-grid reveal">
+        <div class="p-stat">
+          <div class="num">27</div>
+          <div class="label">Public data sources unified in one terminal</div>
+        </div>
+        <div class="p-stat">
+          <div class="num">15m</div>
+          <div class="label">Refresh cycle — fully automated, 24/7</div>
+        </div>
+        <div class="p-stat">
+          <div class="num">7</div>
+          <div class="label">LLM providers for AI-powered analysis</div>
+        </div>
+        <div class="p-stat">
+          <div class="num">0</div>
+          <div class="label">Cloud dependencies — runs entirely local</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ STATS BANNER ═══════════════════════════════════════ -->
+<div id="stats-banner">
+  <div class="container">
+    <div class="stats-row">
+      <div class="stat-block reveal">
+        <span class="stat-num" data-target="27">0</span>
+        <div class="stat-label">OSINT Sources</div>
+      </div>
+      <div class="stat-block reveal">
+        <span class="stat-num" data-target="7">0</span>
+        <div class="stat-label">LLM Providers</div>
+      </div>
+      <div class="stat-block reveal">
+        <span class="stat-num" data-target="600" data-suffix="+">0</span>
+        <div class="stat-label">SDR Receivers</div>
+      </div>
+      <div class="stat-block reveal">
+        <span class="stat-num" data-target="9">0</span>
+        <div class="stat-label">Map Marker Types</div>
+      </div>
+      <div class="stat-block reveal">
+        <span class="stat-num" data-target="1">0</span>
+        <div class="stat-label">Dependency (Express)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SHOWCASE ═══════════════════════════════════════ -->
+<section id="showcase">
+  <div class="container">
+    <div class="section-label reveal">The Application</div>
+    <h2 class="section-title reveal">A Jarvis-style intelligence terminal<br>for the open web.</h2>
+    <p class="section-sub reveal">Real-time WebGL globe, flat D3.js map, 9 marker types, SSE-pushed live data, multi-panel HUD — all from a single Node.js process with one npm dependency.</p>
+
+    <!-- SCREENSHOT GALLERY -->
+    <div class="screenshot-gallery">
+      <div class="sc-main reveal" onclick="openLightbox('../docs/dashboard.png')">
+        <img src="../docs/dashboard.png" alt="Crucix full dashboard" loading="lazy">
+        <div class="sc-label sc-main-label">Full Intelligence Dashboard — live panels, real-time data, 3-column HUD</div>
+      </div>
+      <div class="sc-thumb reveal" onclick="openLightbox('../docs/globe.png')">
+        <img src="../docs/globe.png" alt="3D WebGL globe" loading="lazy" style="height:280px">
+        <div class="sc-label">3D WebGL Globe — Three.js + Globe.gl</div>
+      </div>
+      <div class="sc-thumb reveal" onclick="openLightbox('../docs/map.png')">
+        <img src="../docs/map.png" alt="D3 flat map" loading="lazy" style="height:280px">
+        <div class="sc-label">D3.js Flat Map — 9 marker types, flight arcs</div>
+      </div>
+    </div>
+
+    <!-- FEATURES GRID -->
+    <div class="features-grid">
+      <div class="feat-card reveal">
+        <span class="feat-icon">🌐</span>
+        <div class="feat-title">WebGL 3D Globe</div>
+        <div class="feat-desc">Three.js + Globe.gl rendering with atmosphere glow, star field, pulsing conflict rings, and animated flight corridor arcs between air traffic hotspots.</div>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-icon">⚡</span>
+        <div class="feat-title">Delta Engine</div>
+        <div class="feat-desc">Semantic change detection across 25+ signals. Numeric thresholds (VIX, yield spreads, energy), count deltas, content hashing, and cross-run deduplication.</div>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-icon">🧠</span>
+        <div class="feat-title">LLM Trade Ideas</div>
+        <div class="feat-desc">Compacts sweep data to ~8KB and dispatches to your chosen LLM. Returns 5–8 actionable ideas (LONG/SHORT/HEDGE) with confidence scores and multi-source citations.</div>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-icon">📡</span>
+        <div class="feat-title">Two-Way Bots</div>
+        <div class="feat-desc">Telegram and Discord bots with /brief, /sweep, /status, /mute commands. Push alerts at FLASH/PRIORITY/ROUTINE tiers with progressive cooldown decay.</div>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-icon">🔴</span>
+        <div class="feat-title">SSE Live Push</div>
+        <div class="feat-desc">Server-Sent Events stream all connected dashboards in real-time the moment a sweep completes — no polling, no WebSocket overhead.</div>
+      </div>
+      <div class="feat-card reveal">
+        <span class="feat-icon">🛰️</span>
+        <div class="feat-title">27 Data Sources</div>
+        <div class="feat-desc">GDELT, OpenSky, NASA FIRMS, Maritime AIS, Safecast, ACLED, WHO, OFAC, FRED, BLS, EIA, CelesTrak, Yahoo Finance — queried in parallel every 15 minutes.</div>
+      </div>
+    </div>
+
+    <!-- TECH STACK CHIPS -->
+    <div class="tech-chips reveal">
+      <span class="chip accent">Three.js</span>
+      <span class="chip accent">Globe.gl</span>
+      <span class="chip accent">D3.js v7</span>
+      <span class="chip accent">GSAP 3.12</span>
+      <span class="chip blue">Node.js ESM</span>
+      <span class="chip blue">Express v5</span>
+      <span class="chip blue">Server-Sent Events</span>
+      <span class="chip">Claude / Anthropic</span>
+      <span class="chip">OpenAI</span>
+      <span class="chip">Google Gemini</span>
+      <span class="chip">Mistral</span>
+      <span class="chip">OpenRouter</span>
+      <span class="chip">Docker</span>
+      <span class="chip">Railway</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ ARCHITECTURE ═══════════════════════════════════════ -->
+<section id="architecture">
+  <div class="container">
+    <div class="section-label reveal">System Design</div>
+    <h2 class="section-title reveal">5-tier intelligence pipeline.<br>All sources run in parallel.</h2>
+    <p class="section-sub reveal">Every sweep dispatches all 27 source modules concurrently via <code style="color:var(--accent);font-family:var(--mono);font-size:14px">Promise.allSettled()</code>. Failures are isolated — a missing API key never crashes the pipeline.</p>
+
+    <div class="arch-diagram reveal">
+
+      <div class="tier">
+        <div class="tier-label">
+          <div class="tier-num">Tier 1</div>
+          <div class="tier-name t1">OSINT</div>
+        </div>
+        <div class="tier-body">
+          <div class="tier-sources">
+            <span class="src-tag">GDELT</span><span class="src-tag">OpenSky ADS-B</span>
+            <span class="src-tag">NASA FIRMS</span><span class="src-tag">Maritime AIS</span>
+            <span class="src-tag">Safecast</span><span class="src-tag">ACLED</span>
+            <span class="src-tag">ReliefWeb</span><span class="src-tag">WHO</span>
+            <span class="src-tag">OFAC SDN</span><span class="src-tag">OpenSanctions</span>
+            <span class="src-tag">ADS-B Exchange</span>
+          </div>
+          <div class="tier-desc">Global news events (100+ languages), real-time flight tracking across 6 hotspot regions, satellite fire detection, vessel tracking, radiation monitoring near 6 nuclear sites, armed conflict events, UN humanitarian alerts, and sanctions intelligence.</div>
+        </div>
+      </div>
+
+      <div class="arch-connector"></div>
+
+      <div class="tier">
+        <div class="tier-label">
+          <div class="tier-num">Tier 2</div>
+          <div class="tier-name t2">Economic</div>
+        </div>
+        <div class="tier-body">
+          <div class="tier-sources">
+            <span class="src-tag">FRED (22 indicators)</span><span class="src-tag">US Treasury</span>
+            <span class="src-tag">BLS</span><span class="src-tag">EIA Energy</span>
+            <span class="src-tag">NY Fed GSCPI</span><span class="src-tag">USAspending</span>
+            <span class="src-tag">UN Comtrade</span>
+          </div>
+          <div class="tier-desc">22 Federal Reserve macro indicators (VIX, yield curve, CPI, M2), WTI/Brent/NatGas prices, nonfarm payrolls, supply chain pressure index, defense contracts, and strategic commodity trade flows.</div>
+        </div>
+      </div>
+
+      <div class="arch-connector"></div>
+
+      <div class="tier">
+        <div class="tier-label">
+          <div class="tier-num">Tier 3</div>
+          <div class="tier-name t3">Env / Social</div>
+        </div>
+        <div class="tier-body">
+          <div class="tier-sources">
+            <span class="src-tag">NOAA/NWS</span><span class="src-tag">EPA RadNet</span>
+            <span class="src-tag">USPTO Patents</span><span class="src-tag">Bluesky</span>
+            <span class="src-tag">Reddit</span><span class="src-tag">Telegram (17ch)</span>
+            <span class="src-tag">KiwiSDR (~600)</span>
+          </div>
+          <div class="tier-desc">US weather alerts, radiation monitoring, patent filings in 7 strategic tech sectors, social sentiment, 17 curated OSINT/conflict Telegram channels, and ~600 global HF radio receivers.</div>
+        </div>
+      </div>
+
+      <div class="arch-connector"></div>
+
+      <div class="tier">
+        <div class="tier-label">
+          <div class="tier-num">Tier 4</div>
+          <div class="tier-name t4">Space</div>
+        </div>
+        <div class="tier-body">
+          <div class="tier-sources">
+            <span class="src-tag">CelesTrak</span><span class="src-tag">ISS Tracking</span>
+            <span class="src-tag">Military Constellations</span><span class="src-tag">Starlink/OneWeb</span>
+          </div>
+          <div class="tier-desc">Real-time satellite launches, ISS position, military constellation counts (GPS, GLONASS, Galileo, BeiDou), and commercial megaconstellation tracking via CelesTrak TLE feeds.</div>
+        </div>
+      </div>
+
+      <div class="arch-connector"></div>
+
+      <div class="tier">
+        <div class="tier-label">
+          <div class="tier-num">Tier 5</div>
+          <div class="tier-name t5">Markets</div>
+        </div>
+        <div class="tier-body">
+          <div class="tier-sources">
+            <span class="src-tag">Yahoo Finance</span><span class="src-tag">SPY / QQQ</span>
+            <span class="src-tag">BTC / Gold / WTI</span><span class="src-tag">VIX</span>
+          </div>
+          <div class="tier-desc">Live market prices for equities, crypto, commodities, and volatility indices. Used as the final cross-validation layer for geopolitical and economic signal interpretation.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ DATA SCIENCE DEPTH ═══════════════════════════════════════ -->
+<section id="depth">
+  <div class="container">
+    <div class="section-label reveal">Engineering Depth</div>
+    <h2 class="section-title reveal">The data science under the hood.</h2>
+    <p class="section-sub reveal">Beyond ingestion — semantic deduplication, multi-domain correlation, confidence scoring, and adaptive alert triage built without a single external data-science library.</p>
+
+    <div class="depth-grid">
+
+      <!-- DELTA ENGINE -->
+      <div class="depth-card reveal">
+        <div class="depth-card-head">
+          <div class="depth-icon">⚡</div>
+          <div>
+            <div class="depth-title">Delta Engine</div>
+            <div class="depth-sub">Change detection &amp; semantic deduplication</div>
+          </div>
+        </div>
+        <div class="depth-body">
+          <strong>Numeric signals</strong> tracked with configurable thresholds: VIX (±5%), yield spreads, WTI, Brent, NatGas, unemployment, mortgage rates, USD index. Last 5 observations stored for trend extraction.
+          <br><br>
+          <strong>Count-based metrics</strong> with noise-suppression gates: thermal detections (±500 to flag), air activity (±50), conflict fatalities (±5), urgent OSINT posts.
+          <br><br>
+          <strong>Semantic deduplication</strong> for Telegram content — normalises numbers, timestamps, punctuation — prevents alert fatigue from duplicate posts across channels.
+        </div>
+        <div class="code-snippet">
+<span class="cm">// Risk direction from cross-domain signal weights</span>
+<span class="kw">const</span> score = vixDelta * 2 + yieldSpreadDelta * 1.5
+  + urgentOsintPosts * 0.8 + conflictEvents * 1.2
+  + thermalDetections * 0.3;
+direction = score &gt; 0 ? <span class="str">'risk-off'</span>
+  : score &lt; 0 ? <span class="str">'risk-on'</span> : <span class="str">'mixed'</span>;
+        </div>
+      </div>
+
+      <!-- LLM LAYER -->
+      <div class="depth-card reveal">
+        <div class="depth-card-head">
+          <div class="depth-icon">🧠</div>
+          <div>
+            <div class="depth-title">LLM Integration</div>
+            <div class="depth-sub">7 providers, raw fetch, no SDKs</div>
+          </div>
+        </div>
+        <div class="depth-body">
+          A unified provider abstraction built on raw <code style="color:var(--accent);font-family:var(--mono);font-size:12px">fetch()</code> — no Anthropic SDK, no OpenAI SDK. Each provider module handles auth, model defaults, and response parsing with a single interface: <code style="color:var(--accent);font-family:var(--mono);font-size:12px">complete(system, user, opts)</code>.
+          <br><br>
+          Sweep data is <strong>compressed to ~8KB</strong> before dispatch — extracting 22 FRED indicators, energy prices, geopolitical signals, thermal counts, and delta changes — fitting within any model's context budget.
+        </div>
+        <div class="provider-grid">
+          <div class="provider"><span class="pmark">⬛</span>Anthropic</div>
+          <div class="provider"><span class="pmark">🟢</span>OpenAI</div>
+          <div class="provider"><span class="pmark">🔷</span>Gemini</div>
+          <div class="provider"><span class="pmark">🟣</span>Mistral</div>
+          <div class="provider"><span class="pmark">🔵</span>OpenRouter</div>
+          <div class="provider"><span class="pmark">⚡</span>Codex</div>
+          <div class="provider"><span class="pmark">🌀</span>MiniMax</div>
+        </div>
+      </div>
+
+      <!-- TRADE IDEA GENERATION -->
+      <div class="depth-card reveal">
+        <div class="depth-card-head">
+          <div class="depth-icon">💡</div>
+          <div>
+            <div class="depth-title">Trade Idea Generator</div>
+            <div class="depth-sub">Cross-domain quantitative analysis</div>
+          </div>
+        </div>
+        <div class="depth-body">
+          Each sweep produces <strong>5–8 actionable trade ideas</strong> combining geopolitical, economic, and market signals. The LLM acts as a "quant analyst at a macro intelligence firm" — output is structured JSON with <strong>ticker, type, confidence, rationale, risk, and time horizon</strong>.
+          <br><br>
+          Without an LLM, a <strong>rule-based fallback</strong> correlates: conflict-energy nexus, yield curve inversion signals, credit-equity divergence (HY spread vs VIX), supply chain–inflation pipeline (GSCPI + PPI), and defense procurement signals.
+        </div>
+        <div class="code-snippet">
+{ <span class="str">"title"</span>: <span class="str">"Energy Supply Shock Hedge"</span>,
+  <span class="str">"type"</span>: <span class="str">"HEDGE"</span>, <span class="str">"ticker"</span>: <span class="str">"UCO"</span>,
+  <span class="str">"confidence"</span>: <span class="str">"HIGH"</span>,
+  <span class="str">"horizon"</span>: <span class="str">"Days"</span>,
+  <span class="str">"signals"</span>: [<span class="str">"ACLED +340 fatalities"</span>, <span class="str">"WTI +4.2%"</span>,
+              <span class="str">"AIS dark ships +12"</span>] }
+        </div>
+      </div>
+
+      <!-- ALERT TRIAGE -->
+      <div class="depth-card reveal">
+        <div class="depth-card-head">
+          <div class="depth-icon">🚨</div>
+          <div>
+            <div class="depth-title">Alert Triage System</div>
+            <div class="depth-sub">Adaptive cooldown &amp; multi-tier escalation</div>
+          </div>
+        </div>
+        <div class="depth-body">
+          Three-tier alert system with <strong>progressive cooldown decay</strong> to prevent fatigue: 1st occurrence (0h wait) → 2nd within 24h (6h cooldown) → 3rd (12h) → 4th+ (24h). LLM-enhanced when configured, rule-based otherwise.
+          <br><br>
+          Cross-domain confirmation required for FLASH tier — a single spiking signal never triggers critical alerts without multi-source validation.
+        </div>
+        <div class="alert-tiers">
+          <div class="at flash"><div class="at-dot"></div>FLASH — Crisis-level, multi-domain confirmed</div>
+          <div class="at priority"><div class="at-dot"></div>PRIORITY — Significant, 2–3 confirming signals</div>
+          <div class="at routine"><div class="at-dot"></div>ROUTINE — Standard sweep update</div>
+        </div>
+      </div>
+
+      <!-- MEMORY SYSTEM -->
+      <div class="depth-card wide reveal">
+        <div class="depth-card-head">
+          <div class="depth-icon">🗄️</div>
+          <div>
+            <div class="depth-title">Persistent Memory System</div>
+            <div class="depth-sub">Hot/cold storage with atomic writes and crash recovery</div>
+          </div>
+        </div>
+        <div class="depth-body">
+          <strong>Hot memory</strong> stores the last 3 sweep outputs in-memory with atomic file writes (temp → backup → rename) to prevent data corruption on crash. <strong>Cold storage</strong> archives daily JSON snapshots for historical pattern matching. The delta engine compares against this timeline to detect escalation trends, not just point-in-time spikes.
+          <br><br>
+          Confidence scoring weighs <strong>cross-domain corroboration</strong>: a yield spread move confirmed by VIX, urgent OSINT posts, and a concurrent conflict event scores far higher than a single isolated data spike. This architecture eliminates noise while catching genuinely rare, correlated events.
+        </div>
+        <div class="memory-flow">
+          <div class="mem-node">
+            <span class="mn-val">Run N-2</span>
+            Cold Archive
+          </div>
+          <div class="mem-arrow">→</div>
+          <div class="mem-node">
+            <span class="mn-val">Run N-1</span>
+            Hot Memory
+          </div>
+          <div class="mem-arrow">→</div>
+          <div class="mem-node">
+            <span class="mn-val">Run N</span>
+            Hot Memory
+          </div>
+          <div class="mem-arrow">→</div>
+          <div class="mem-node">
+            <span class="mn-val">Delta</span>
+            Computed
+          </div>
+          <div class="mem-arrow">→</div>
+          <div class="mem-node">
+            <span class="mn-val">Alert</span>
+            Dispatched
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ LIVE DEMO ═══════════════════════════════════════ -->
+<section id="demo">
+  <div class="container">
+    <div class="section-label reveal">Live Terminal</div>
+    <h2 class="section-title reveal">See it in action.</h2>
+    <p class="section-sub reveal">The live deployment runs on Railway — 27 sources, fully operational. Click to open full-screen.</p>
+
+    <div class="demo-wrapper reveal">
+      <div class="demo-frame-wrap">
+        <div class="demo-topbar">
+          <div class="demo-dot r"></div>
+          <div class="demo-dot y"></div>
+          <div class="demo-dot g"></div>
+          <div class="demo-url"><span>crucix.live</span> — Intelligence Terminal</div>
+        </div>
+        <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden">
+          <iframe
+            src="https://www.crucix.live"
+            style="position:absolute;top:0;left:0;width:100%;height:100%;border:none"
+            title="Crucix Live Dashboard"
+            loading="lazy"
+            sandbox="allow-scripts allow-same-origin"
+            onerror="this.parentNode.querySelector('.demo-fallback').style.display='block';this.style.display='none'"
+          ></iframe>
+          <div class="demo-fallback" style="position:absolute;inset:0;background:url('../docs/dashboard.png') center/cover;display:none">
+            <div class="demo-fallback-msg">
+              <div style="font-family:var(--mono);font-size:14px;color:var(--accent);letter-spacing:0.1em">LIVE PREVIEW BLOCKED BY BROWSER</div>
+              <a href="https://www.crucix.live" target="_blank" rel="noopener" class="btn-primary" style="margin-top:8px">Open in New Tab</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="demo-cta-row">
+        <a href="https://www.crucix.live" target="_blank" rel="noopener" class="btn-primary">Open Full Terminal</a>
+        <a href="https://github.com/stevenmcdermott-sys/crucix" target="_blank" rel="noopener" class="btn-ghost">Deploy Your Own</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ ARSENAL ═══════════════════════════════════════ -->
+<section id="arsenal">
+  <div class="container">
+    <div class="section-label reveal">Technical Stack</div>
+    <h2 class="section-title reveal">Built with precision.<br>No unnecessary dependencies.</h2>
+    <p class="section-sub reveal">One runtime dependency in production (Express). Everything else is either native Node.js, a CDN-loaded frontend library, or a raw API call.</p>
+
+    <div class="arsenal-grid">
+      <div class="skill-card reveal">
+        <div class="skill-icon">🟨</div>
+        <div class="skill-name">Node.js ESM</div>
+        <div class="skill-desc">Pure ES modules, no transpilation. Native <code style="color:var(--accent);font-family:var(--mono)">import/export</code> throughout.</div>
+        <div class="skill-bar-wrap"><div class="skill-bar" data-width="95"></div></div>
+      </div>
+      <div class="skill-card reveal">
+        <div class="skill-icon">🌐</div>
+        <div class="skill-name">Three.js / WebGL</div>
+        <div class="skill-desc">3D globe rendering, atmosphere glow, animated flight arcs, particle systems.</div>
+        <div class="skill-bar-wrap"><div class="skill-bar" data-width="88"></div></div>
+      </div>
+      <div class="skill-card reveal">
+        <div class="skill-icon">📊</div>
+        <div class="skill-name">D3.js v7</div>
+        <div class="skill-desc">Cartographic projections, SVG maps, geo-tagged marker placement.</div>
+        <div class="skill-bar-wrap"><div class="skill-bar" data-width="85"></div></div>
+      </div>
+      <div class="skill-card reveal">
+        <div class="skill-icon">✨</div>
+        <div class="skill-name">GSAP 3.12</div>
+        <div class="skill-desc">Cinematic boot sequence, scroll-triggered reveals, stagger animations.</div>
+        <div class="skill-bar-wrap"><div class="skill-bar" data-width="90"></div></div>
+      </div>
+      <div class="skill-card reveal">
+        <div class="skill-icon">⚡</div>
+        <div class="skill-name">Server-Sent Events</div>
+        <div class="skill-desc">Real-time push to all connected dashboards — no polling, no WebSocket overhead.</div>
+        <div class="skill-bar-wrap"><div class="skill-bar" data-width="92"></div></div>
+      </div>
+      <div class="skill-card reveal">
+        <div class="skill-icon">🤖</div>
+        <div class="skill-name">LLM APIs</div>
+        <div class="skill-desc">Raw fetch() integration across 7 providers. No SDKs — full control over auth and response parsing.</div>
+        <div class="skill-bar-wrap"><div class="skill-bar" data-width="93"></div></div>
+      </div>
+      <div class="skill-card reveal">
+        <div class="skill-icon">🐳</div>
+        <div class="skill-name">Docker</div>
+        <div class="skill-desc">Volume-mounted runs/ directory. Single <code style="color:var(--accent);font-family:var(--mono)">docker compose up</code> to deploy.</div>
+        <div class="skill-bar-wrap"><div class="skill-bar" data-width="80"></div></div>
+      </div>
+      <div class="skill-card reveal">
+        <div class="skill-icon">🚀</div>
+        <div class="skill-name">Railway / Cloud</div>
+        <div class="skill-desc">Auto-configured Railway deployment. Also deployable to any VPS or Raspberry Pi.</div>
+        <div class="skill-bar-wrap"><div class="skill-bar" data-width="82"></div></div>
+      </div>
+      <div class="skill-card reveal">
+        <div class="skill-icon">📱</div>
+        <div class="skill-name">Telegram / Discord</div>
+        <div class="skill-desc">Two-way bot integrations. Slash commands, rich embeds, webhook fallbacks.</div>
+        <div class="skill-bar-wrap"><div class="skill-bar" data-width="87"></div></div>
+      </div>
+      <div class="skill-card reveal">
+        <div class="skill-icon">🛰️</div>
+        <div class="skill-name">REST APIs (27)</div>
+        <div class="skill-desc">Custom <code style="color:var(--accent);font-family:var(--mono)">safeFetch()</code> with timeouts, retries, auto-JSON, and graceful degradation per source.</div>
+        <div class="skill-bar-wrap"><div class="skill-bar" data-width="96"></div></div>
+      </div>
+      <div class="skill-card reveal">
+        <div class="skill-icon">🔒</div>
+        <div class="skill-name">Security Design</div>
+        <div class="skill-desc">Zero telemetry, local-only data, atomic file writes, no third-party analytics.</div>
+        <div class="skill-bar-wrap"><div class="skill-bar" data-width="94"></div></div>
+      </div>
+      <div class="skill-card reveal">
+        <div class="skill-icon">💾</div>
+        <div class="skill-name">State Management</div>
+        <div class="skill-desc">Hot/cold JSON storage with crash recovery. No database — pure filesystem with atomic writes.</div>
+        <div class="skill-bar-wrap"><div class="skill-bar" data-width="88"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ GITHUB ═══════════════════════════════════════ -->
+<section id="github-section">
+  <div class="container">
+    <div class="section-label reveal">Open Source</div>
+    <h2 class="section-title reveal" style="text-align:center">Free to run. Free to fork.<br>AGPL-3.0 licensed.</h2>
+
+    <div class="gh-card reveal">
+      <div class="gh-avatar">⚡</div>
+      <div class="gh-name">CRUCIX</div>
+      <div class="gh-handle">github.com / stevenmcdermott-sys / crucix</div>
+      <div class="gh-desc">Your own intelligence terminal. 27 OSINT sources, 7 LLM providers, real-time WebGL dashboard, Telegram/Discord bots, and a production-grade delta engine — all in one command.</div>
+      <div class="gh-stats">
+        <div class="gh-stat">
+          <span class="gh-stat-num">27</span>
+          <div class="gh-stat-label">Sources</div>
+        </div>
+        <div class="gh-stat">
+          <span class="gh-stat-num">58</span>
+          <div class="gh-stat-label">JS Modules</div>
+        </div>
+        <div class="gh-stat">
+          <span class="gh-stat-num">1</span>
+          <div class="gh-stat-label">Dependency</div>
+        </div>
+      </div>
+      <div class="gh-tags">
+        <span class="gh-tag">osint</span>
+        <span class="gh-tag">intelligence</span>
+        <span class="gh-tag">data-science</span>
+        <span class="gh-tag">llm</span>
+        <span class="gh-tag">webgl</span>
+        <span class="gh-tag">real-time</span>
+        <span class="gh-tag">node.js</span>
+        <span class="gh-tag">dashboard</span>
+        <span class="gh-tag">geopolitics</span>
+        <span class="gh-tag">agpl-3.0</span>
+      </div>
+      <div class="gh-btns">
+        <a href="https://github.com/stevenmcdermott-sys/crucix" target="_blank" rel="noopener" class="btn-primary">View Repository</a>
+        <a href="https://www.crucix.live" target="_blank" rel="noopener" class="btn-ghost">Live Demo</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ FOOTER ═══════════════════════════════════════ -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        CRUCIX
+        <small>Intelligence Engineering · Built in the open</small>
+      </div>
+      <div class="footer-links">
+        <a href="https://www.crucix.live" target="_blank" rel="noopener">Live Terminal</a>
+        <a href="https://github.com/stevenmcdermott-sys/crucix" target="_blank" rel="noopener">GitHub</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#depth">Data Science</a>
+      </div>
+    </div>
+    <div class="footer-copy">
+      Licensed under <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a> &nbsp;·&nbsp;
+      Data from public APIs &amp; open-source feeds &nbsp;·&nbsp;
+      Zero telemetry &nbsp;·&nbsp; Zero cloud
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── THREE.JS HERO PARTICLES ──────────────────────────────────────────────────
+(function(){
+  const canvas = document.getElementById('hero-canvas');
+  const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, canvas.offsetWidth/canvas.offsetHeight, 0.1, 1000);
+  camera.position.z = 80;
+
+  // Particles
+  const count = 2200;
+  const positions = new Float32Array(count*3);
+  const colors = new Float32Array(count*3);
+  const col1 = new THREE.Color(0x64f0c8);
+  const col2 = new THREE.Color(0x44ccff);
+  const colDim = new THREE.Color(0x1a3030);
+
+  for(let i=0;i<count;i++){
+    positions[i*3]   = (Math.random()-0.5)*260;
+    positions[i*3+1] = (Math.random()-0.5)*260;
+    positions[i*3+2] = (Math.random()-0.5)*160;
+    const t = Math.random();
+    const c = t < 0.3 ? col1 : t < 0.5 ? col2 : colDim;
+    colors[i*3]=c.r; colors[i*3+1]=c.g; colors[i*3+2]=c.b;
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions,3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors,3));
+
+  const mat = new THREE.PointsMaterial({
+    size:0.9, vertexColors:true, transparent:true, opacity:0.75,
+    sizeAttenuation:true
+  });
+  const points = new THREE.Points(geo,mat);
+  scene.add(points);
+
+  // Connection lines (sparse)
+  const lineGeo = new THREE.BufferGeometry();
+  const linePos = [];
+  for(let i=0;i<80;i++){
+    const a = Math.floor(Math.random()*count), b = Math.floor(Math.random()*count);
+    const dist = Math.hypot(
+      positions[a*3]-positions[b*3],
+      positions[a*3+1]-positions[b*3+1]
+    );
+    if(dist < 40){
+      linePos.push(positions[a*3],positions[a*3+1],positions[a*3+2]);
+      linePos.push(positions[b*3],positions[b*3+1],positions[b*3+2]);
+    }
+  }
+  lineGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(linePos),3));
+  const lineMat = new THREE.LineBasicMaterial({color:0x64f0c8, transparent:true, opacity:0.08});
+  scene.add(new THREE.LineSegments(lineGeo,lineMat));
+
+  let mouseX=0, mouseY=0;
+  document.addEventListener('mousemove',e=>{
+    mouseX=(e.clientX/window.innerWidth-0.5)*2;
+    mouseY=-(e.clientY/window.innerHeight-0.5)*2;
+  });
+
+  function resize(){
+    const w=canvas.offsetWidth, h=canvas.offsetHeight;
+    renderer.setSize(w,h,false);
+    camera.aspect=w/h;
+    camera.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener('resize',resize);
+
+  let t=0;
+  function animate(){
+    requestAnimationFrame(animate);
+    t+=0.004;
+    points.rotation.y = t*0.05 + mouseX*0.08;
+    points.rotation.x = mouseY*0.05;
+    mat.opacity = 0.55 + Math.sin(t)*0.1;
+    renderer.render(scene,camera);
+  }
+  animate();
+})();
+
+// ── TYPEWRITER ───────────────────────────────────────────────────────────────
+(function(){
+  const el = document.getElementById('typewriter');
+  const phrases = [
+    '27 Sources. One Signal. Zero Cloud.',
+    'Real-time cross-domain intelligence.',
+    'LLM-powered geopolitical analysis.',
+    'From satellite to market in 15 minutes.',
+    'Your own intelligence terminal.'
+  ];
+  let pi=0, ci=0, deleting=false;
+  function tick(){
+    const phrase = phrases[pi];
+    if(!deleting){
+      el.textContent = phrase.slice(0,++ci);
+      if(ci===phrase.length){ deleting=true; setTimeout(tick,2200); return; }
+    } else {
+      el.textContent = phrase.slice(0,--ci);
+      if(ci===0){ deleting=false; pi=(pi+1)%phrases.length; setTimeout(tick,400); return; }
+    }
+    setTimeout(tick, deleting ? 35 : 65);
+  }
+  tick();
+})();
+
+// ── GSAP SCROLL ANIMATIONS ───────────────────────────────────────────────────
+gsap.registerPlugin(ScrollTrigger);
+
+gsap.utils.toArray('.reveal').forEach(el=>{
+  gsap.fromTo(el,
+    {opacity:0, y:36},
+    {opacity:1, y:0, duration:0.85, ease:'power3.out',
+     scrollTrigger:{trigger:el, start:'top 88%', toggleActions:'play none none none'}}
+  );
+});
+
+// ── COUNTER ANIMATION ────────────────────────────────────────────────────────
+document.querySelectorAll('.stat-num[data-target]').forEach(el=>{
+  const target = +el.dataset.target;
+  const suffix = el.dataset.suffix||'';
+  ScrollTrigger.create({
+    trigger: el,
+    start: 'top 85%',
+    once: true,
+    onEnter(){
+      gsap.fromTo({v:0},{v:target},{
+        duration:1.8, ease:'power2.out',
+        onUpdate(){ el.textContent = Math.round(this.targets()[0].v) + suffix; }
+      });
+    }
+  });
+});
+
+// ── SKILL BARS ────────────────────────────────────────────────────────────────
+document.querySelectorAll('.skill-bar[data-width]').forEach(bar=>{
+  ScrollTrigger.create({
+    trigger:bar, start:'top 90%', once:true,
+    onEnter(){ bar.style.width = bar.dataset.width+'%'; }
+  });
+});
+
+// ── LIGHTBOX ──────────────────────────────────────────────────────────────────
+function openLightbox(src){
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+document.getElementById('lightbox').addEventListener('click',function(e){
+  if(e.target===this||e.target===document.getElementById('lightbox-close'))
+    this.classList.remove('open');
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') document.getElementById('lightbox').classList.remove('open');
+});
+
+// ── HERO entrance ─────────────────────────────────────────────────────────────
+gsap.fromTo('.hero-eyebrow',{opacity:0,y:20},{opacity:1,y:0,duration:1,delay:0.3,ease:'power3.out'});
+gsap.fromTo('.hero-title',{opacity:0,y:32},{opacity:1,y:0,duration:1,delay:0.55,ease:'power3.out'});
+gsap.fromTo('.hero-tagline',{opacity:0},{opacity:1,duration:0.8,delay:1,ease:'power2.out'});
+gsap.fromTo('.hero-btns',{opacity:0,y:16},{opacity:1,y:0,duration:0.8,delay:1.2,ease:'power3.out'});
+gsap.fromTo('.hero-scroll',{opacity:0},{opacity:1,duration:1,delay:1.8});
+</script>
+</body>
+</html>
