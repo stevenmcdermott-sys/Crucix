@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crucix Data Showcase</title>
+  <meta name="description" content="Live interactive showcase of Crucix Intelligence Engine with 27 OSINT sources.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="vendor/leaflet.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" onerror="">
+</head>
+<body>
+
+  <header id="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+      <div class="hero-badge">OPEN SOURCE INTELLIGENCE</div>
+      <h1>CRUCIX<span class="accent">.</span></h1>
+      <p class="hero-sub">27 parallel data sources. Real-time threat intelligence. One unified view.</p>
+      <div class="hero-stats" id="heroStats">
+        <div class="stat"><span class="stat-num" data-target="27">0</span><span class="stat-label">Data Sources</span></div>
+        <div class="stat"><span class="stat-num" data-target="5">0</span><span class="stat-label">Intelligence Tiers</span></div>
+        <div class="stat"><span class="stat-num" data-target="15">0</span><span class="stat-label">Min Refresh</span></div>
+        <div class="stat"><span class="stat-num" data-target="3">0</span><span class="stat-label">Alert Channels</span></div>
+      </div>
+      <div class="hero-actions">
+        <button class="btn btn-primary" onclick="scrollToSection('liveData')">Explore Live Data</button>
+        <button class="btn btn-outline" onclick="scrollToSection('pipeline')">View Architecture</button>
+      </div>
+      <div class="connection-bar" id="connectionBar">
+        <span class="conn-dot"></span>
+        <span id="connStatus">Connecting to Crucix API...</span>
+        <input type="text" id="apiUrl" placeholder="https://your-crucix-instance.com" spellcheck="false">
+        <button class="btn btn-sm" onclick="connectAPI()">Connect</button>
+        <button class="btn btn-sm btn-ghost" onclick="loadDemoData()">Use Demo Data</button>
+      </div>
+    </div>
+  </header>
+
+  <section id="liveData" class="section">
+    <div class="section-header">
+      <h2>Live Intelligence Feed</h2>
+      <div class="section-meta">
+        <span id="sweepTime" class="tag">--</span>
+        <span id="sourcesTag" class="tag">--</span>
+        <span id="directionTag" class="tag">--</span>
+      </div>
+    </div>
+    <div class="panel" id="healthPanel">
+      <h3>Source Health Matrix</h3>
+      <div class="health-grid" id="healthGrid"></div>
+    </div>
+    <div class="kpi-row" id="kpiRow">
+      <div class="kpi" id="kpiVix"><div class="kpi-label">VIX</div><div class="kpi-value">--</div></div>
+      <div class="kpi" id="kpiWti"><div class="kpi-label">WTI Crude</div><div class="kpi-value">--</div></div>
+      <div class="kpi" id="kpiSpy"><div class="kpi-label">S&amp;P 500</div><div class="kpi-value">--</div></div>
+      <div class="kpi" id="kpiBtc"><div class="kpi-label">Bitcoin</div><div class="kpi-value">--</div></div>
+      <div class="kpi" id="kpiConflicts"><div class="kpi-label">Conflict Events</div><div class="kpi-value">--</div></div>
+      <div class="kpi" id="kpiThermal"><div class="kpi-label">Thermal Detections</div><div class="kpi-value">--</div></div>
+    </div>
+  </section>
+
+  <section id="mapSection" class="section">
+    <div class="section-header">
+      <h2>Global Threat Map</h2>
+      <div class="map-controls">
+        <button class="btn btn-sm map-layer active" data-layer="thermal" onclick="toggleLayer(this,'thermal')">Thermal</button>
+        <button class="btn btn-sm map-layer active" data-layer="conflict" onclick="toggleLayer(this,'conflict')">Conflict</button>
+        <button class="btn btn-sm map-layer active" data-layer="nuclear" onclick="toggleLayer(this,'nuclear')">Nuclear</button>
+        <button class="btn btn-sm map-layer active" data-layer="air" onclick="toggleLayer(this,'air')">Air Traffic</button>
+        <button class="btn btn-sm map-layer active" data-layer="maritime" onclick="toggleLayer(this,'maritime')">Maritime</button>
+        <button class="btn btn-sm map-layer active" data-layer="news" onclick="toggleLayer(this,'news')">News</button>
+      </div>
+    </div>
+    <div id="map"></div>
+    <div class="map-legend" id="mapLegend">
+      <div class="legend-item"><span class="legend-dot" style="background:#ff4444"></span>Thermal/Fire</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#ff8800"></span>Conflict</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#ffdd00"></span>Nuclear</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#44ff88"></span>Air Traffic</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#aa44ff"></span>Maritime</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#44aaff"></span>News/GDELT</div>
+    </div>
+  </section>
+
+  <section id="charts" class="section">
+    <div class="section-header">
+      <h2>Economic &amp; Risk Analytics</h2>
+    </div>
+    <div class="charts-grid">
+      <div class="panel chart-panel">
+        <h3>VIX Fear Index</h3>
+        <canvas id="chartVix"></canvas>
+      </div>
+      <div class="panel chart-panel">
+        <h3>Energy Prices (5-Day)</h3>
+        <canvas id="chartEnergy"></canvas>
+      </div>
+      <div class="panel chart-panel">
+        <h3>Market Indexes</h3>
+        <canvas id="chartMarkets"></canvas>
+      </div>
+      <div class="panel chart-panel">
+        <h3>Macro Risk Gauges</h3>
+        <canvas id="chartMacro"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section id="signals" class="section">
+    <div class="section-header">
+      <h2>Cross-Source Intelligence Signals</h2>
+    </div>
+    <div class="signals-grid">
+      <div class="panel" id="signalsPanel">
+        <h3>Active Signals</h3>
+        <div id="signalsList" class="signals-list"></div>
+      </div>
+      <div class="panel" id="newsPanel">
+        <h3>OSINT News Feed</h3>
+        <div id="newsFeed" class="news-feed"></div>
+      </div>
+      <div class="panel" id="deltaPanel">
+        <h3>Sweep Delta</h3>
+        <div id="deltaContent" class="delta-content"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pipeline" class="section">
+    <div class="section-header">
+      <h2>Data Pipeline Architecture</h2>
+      <p class="section-desc">How Crucix aggregates 27 sources in parallel every 15 minutes</p>
+    </div>
+    <div class="pipeline-diagram">
+      <div class="pipe-stage">
+        <div class="pipe-label">DATA SOURCES</div>
+        <div class="pipe-nodes">
+          <div class="pipe-node tier1">OpenSky</div>
+          <div class="pipe-node tier1">NASA FIRMS</div>
+          <div class="pipe-node tier1">ACLED</div>
+          <div class="pipe-node tier1">GDELT</div>
+          <div class="pipe-node tier1">Safecast</div>
+          <div class="pipe-node tier2">FRED</div>
+          <div class="pipe-node tier2">BLS</div>
+          <div class="pipe-node tier2">EIA</div>
+          <div class="pipe-node tier2">Treasury</div>
+          <div class="pipe-node tier3">Telegram</div>
+          <div class="pipe-node tier3">Reddit</div>
+          <div class="pipe-node tier3">Bluesky</div>
+          <div class="pipe-node tier4">CelesTrak</div>
+          <div class="pipe-node tier4">KiwiSDR</div>
+          <div class="pipe-node tier1">WHO</div>
+          <div class="pipe-node tier1">NOAA</div>
+          <div class="pipe-node tier1">Maritime</div>
+          <div class="pipe-node tier2">Yahoo Fin</div>
+          <div class="pipe-node tier1">ReliefWeb</div>
+          <div class="pipe-node tier1">OFAC</div>
+          <div class="pipe-node tier2">GSCPI</div>
+          <div class="pipe-node tier2">Comtrade</div>
+          <div class="pipe-node tier2">USAspend</div>
+          <div class="pipe-node tier3">EPA</div>
+          <div class="pipe-node tier1">OpenSanctions</div>
+          <div class="pipe-node tier1">ADS-B</div>
+          <div class="pipe-node tier3">Patents</div>
+        </div>
+      </div>
+      <div class="pipe-arrow">
+        <svg width="60" height="40"><path d="M30 0 L30 25 L20 25 L30 38 L40 25 L30 25" fill="#64f0c8"/></svg>
+        <span class="pipe-arrow-label">Promise.allSettled() &mdash; 30s timeout</span>
+      </div>
+      <div class="pipe-stage">
+        <div class="pipe-label">PROCESSING</div>
+        <div class="pipe-nodes pipe-nodes-row">
+          <div class="pipe-node process">fullBriefing()</div>
+          <div class="pipe-node process">synthesize()</div>
+          <div class="pipe-node process">Delta Engine</div>
+          <div class="pipe-node process">Geo-Tagging</div>
+        </div>
+      </div>
+      <div class="pipe-arrow">
+        <svg width="60" height="40"><path d="M30 0 L30 25 L20 25 L30 38 L40 25 L30 25" fill="#64f0c8"/></svg>
+        <span class="pipe-arrow-label">V2 Object &mdash; unified schema</span>
+      </div>
+      <div class="pipe-stage">
+        <div class="pipe-label">OUTPUT</div>
+        <div class="pipe-nodes pipe-nodes-row">
+          <div class="pipe-node output">WebGL Dashboard</div>
+          <div class="pipe-node output">REST API</div>
+          <div class="pipe-node output">SSE Stream</div>
+          <div class="pipe-node output">Telegram Bot</div>
+          <div class="pipe-node output">Discord Bot</div>
+        </div>
+      </div>
+      <div class="pipe-arrow">
+        <svg width="60" height="40"><path d="M30 0 L30 25 L20 25 L30 38 L40 25 L30 25" fill="#64f0c8"/></svg>
+        <span class="pipe-arrow-label">Optional LLM layer (7 providers)</span>
+      </div>
+      <div class="pipe-stage">
+        <div class="pipe-label">AI ANALYSIS</div>
+        <div class="pipe-nodes pipe-nodes-row">
+          <div class="pipe-node ai">Trade Ideas</div>
+          <div class="pipe-node ai">Smart Alerts</div>
+          <div class="pipe-node ai">Signal Synthesis</div>
+        </div>
+      </div>
+    </div>
+    <div class="tech-stack">
+      <h3>Tech Stack</h3>
+      <div class="tech-grid">
+        <div class="tech-item"><div class="tech-name">Node.js 22+</div><div class="tech-desc">Native fetch, top-level await, ESM</div></div>
+        <div class="tech-item"><div class="tech-name">Express 5</div><div class="tech-desc">Only runtime dependency</div></div>
+        <div class="tech-item"><div class="tech-name">Zero SDKs</div><div class="tech-desc">Raw fetch() for all 27 APIs</div></div>
+        <div class="tech-item"><div class="tech-name">Globe.GL</div><div class="tech-desc">WebGL 3D visualization</div></div>
+        <div class="tech-item"><div class="tech-name">SSE Streaming</div><div class="tech-desc">Real-time push updates</div></div>
+        <div class="tech-item"><div class="tech-name">Delta Engine</div><div class="tech-desc">Change tracking between sweeps</div></div>
+        <div class="tech-item"><div class="tech-name">Multi-LLM</div><div class="tech-desc">Anthropic, OpenAI, Gemini, +4 more</div></div>
+        <div class="tech-item"><div class="tech-name">Docker</div><div class="tech-desc">Multi-arch (amd64 + arm64)</div></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-content">
+      <div class="footer-brand">CRUCIX<span class="accent">.</span> Intelligence Engine</div>
+      <div class="footer-links">
+        <a href="https://github.com/stevenmcdermott-sys/crucix" target="_blank">GitHub</a>
+        <span class="footer-sep">|</span>
+        <span>AGPL-3.0</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="vendor/leaflet.js"></script>
+  <script src="vendor/chart.umd.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
