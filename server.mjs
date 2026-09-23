@@ -288,6 +288,13 @@ app.get('/', (req, res) => {
   }
 });
 
+// Situational map — MapLibre view over the open-data layers (earthquakes,
+// volcanoes/wildfires, ISS, Ukraine frontline, GPS jamming, prediction markets,
+// plus existing FIRMS/ACLED/NOAA/EPA/GDELT/OpenSky point data)
+app.get('/map', (req, res) => {
+  res.sendFile(join(ROOT, 'dashboard/public/map.html'));
+});
+
 // API: current data
 app.get('/api/data', (req, res) => {
   if (!currentData) return res.status(503).json({ error: 'No data yet — first sweep in progress' });

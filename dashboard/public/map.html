@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crucix — Situational Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#020408;--panel:rgba(6,14,22,0.88);--glass:rgba(10,20,32,0.6);
+  --border:rgba(100,240,200,0.14);--border-bright:rgba(100,240,200,0.32);
+  --text:#e8f4f0;--dim:#6a8a82;--accent:#64f0c8;--accent2:#44ccff;
+  --warn:#ffb84c;--danger:#ff5f63;--purple:#c58bff;
+  --mono:'IBM Plex Mono',monospace;--sans:'Space Grotesk',sans-serif;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden}
+#map{position:absolute;inset:0}
+
+.topbar{position:absolute;top:0;left:0;right:0;z-index:5;display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px;border-bottom:1px solid var(--border);background:var(--panel);backdrop-filter:blur(16px);gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.brand a{font-family:var(--mono);font-weight:700;font-size:14px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text);text-decoration:none}
+.brand .sub{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase}
+.topbar-right{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;color:var(--dim)}
+.topbar-right .live{display:inline-flex;align-items:center;gap:6px}
+.topbar-right .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.back-link{border:1px solid var(--border);padding:5px 10px;font-family:var(--mono);font-size:11px;color:var(--dim);text-decoration:none;letter-spacing:0.06em;text-transform:uppercase;transition:all .2s}
+.back-link:hover{border-color:var(--accent);color:var(--text)}
+
+#panel{position:absolute;top:56px;left:0;bottom:0;width:270px;z-index:4;overflow-y:auto;
+  background:var(--panel);border-right:1px solid var(--border);backdrop-filter:blur(16px);padding:14px}
+#panel::-webkit-scrollbar{width:6px}
+#panel::-webkit-scrollbar-thumb{background:var(--border-bright)}
+.panel-title{font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--dim);margin:14px 0 8px}
+.panel-title:first-child{margin-top:0}
+.layer-row{display:flex;align-items:center;gap:8px;padding:6px 4px;cursor:pointer;user-select:none;border-radius:2px}
+.layer-row:hover{background:rgba(100,240,200,0.05)}
+.layer-row input{accent-color:var(--accent);cursor:pointer}
+.layer-row .swatch{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.layer-row .label{font-family:var(--mono);font-size:11.5px;color:var(--text);flex:1}
+.layer-row .count{font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+.layer-row.disabled{opacity:0.35;pointer-events:none}
+.panel-note{font-family:var(--mono);font-size:9.5px;color:var(--dim);line-height:1.5;margin-top:16px;padding-top:12px;border-top:1px solid var(--border)}
+
+.maplibregl-popup-content{background:var(--panel)!important;color:var(--text)!important;border:1px solid var(--border-bright)!important;
+  font-family:var(--mono);font-size:11.5px;padding:10px 12px!important;backdrop-filter:blur(10px);border-radius:2px!important;max-width:260px}
+.maplibregl-popup-tip{border-top-color:var(--border-bright)!important;border-bottom-color:var(--border-bright)!important}
+.popup-title{font-weight:600;color:var(--accent);margin-bottom:4px;font-size:12px}
+.popup-row{color:var(--dim);margin-top:2px}
+.popup-row b{color:var(--text)}
+.popup-link{color:var(--accent2);text-decoration:none;display:inline-block;margin-top:6px}
+
+.legend{position:absolute;bottom:14px;right:14px;z-index:4;background:var(--panel);border:1px solid var(--border);
+  backdrop-filter:blur(16px);padding:10px 12px;font-family:var(--mono);font-size:10px;color:var(--dim);max-width:200px}
+.legend div{display:flex;align-items:center;gap:6px;margin:3px 0}
+.legend .sw{width:8px;height:8px;border-radius:50%}
+
+@media (max-width:720px){
+  #panel{width:220px}
+  .topbar-right .live span:last-child{display:none}
+}
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="topbar">
+  <div class="brand">
+    <a href="/">CRUCIX</a>
+    <span class="sub">// Situational Map</span>
+  </div>
+  <div class="topbar-right">
+    <span class="live"><span class="dot"></span><span id="sweepTime">connecting…</span></span>
+    <a class="back-link" href="/">← Dashboard</a>
+  </div>
+</div>
+
+<div id="panel">
+  <div class="panel-title">Environment</div>
+  <label class="layer-row"><input type="checkbox" data-layer="quakes" checked><span class="swatch" style="background:#ffb84c"></span><span class="label">Earthquakes (M2.5+)</span><span class="count" id="cnt-quakes">0</span></label>
+  <label class="layer-row"><input type="checkbox" data-layer="volcanoes" checked><span class="swatch" style="background:#ff5f63"></span><span class="label">Volcanoes</span><span class="count" id="cnt-volcanoes">0</span></label>
+  <label class="layer-row"><input type="checkbox" data-layer="wildfires" checked><span class="swatch" style="background:#ff8a3d"></span><span class="label">Wildfires (EONET)</span><span class="count" id="cnt-wildfires">0</span></label>
+  <label class="layer-row"><input type="checkbox" data-layer="storms" checked><span class="swatch" style="background:#44ccff"></span><span class="label">Severe Storms</span><span class="count" id="cnt-storms">0</span></label>
+  <label class="layer-row"><input type="checkbox" data-layer="thermal" checked><span class="swatch" style="background:#ff5f63"></span><span class="label">Fire Detections (FIRMS)</span><span class="count" id="cnt-thermal">0</span></label>
+  <label class="layer-row"><input type="checkbox" data-layer="noaa" checked><span class="swatch" style="background:#ffb84c"></span><span class="label">Severe Weather Alerts</span><span class="count" id="cnt-noaa">0</span></label>
+  <label class="layer-row"><input type="checkbox" data-layer="epa"><span class="swatch" style="background:#c58bff"></span><span class="label">Radiation (EPA RadNet)</span><span class="count" id="cnt-epa">0</span></label>
+
+  <div class="panel-title">Conflict &amp; Security</div>
+  <label class="layer-row"><input type="checkbox" data-layer="frontlines" checked><span class="swatch" style="background:#ff5f63;border-radius:2px"></span><span class="label">Ukraine Frontline</span><span class="count" id="cnt-frontlines">0</span></label>
+  <label class="layer-row"><input type="checkbox" data-layer="acled" checked><span class="swatch" style="background:#ff5f63"></span><span class="label">Conflict Events (ACLED)</span><span class="count" id="cnt-acled">0</span></label>
+  <label class="layer-row"><input type="checkbox" data-layer="gpsjam" checked><span class="swatch" style="background:#ff5f63"></span><span class="label">GPS/GNSS Jamming</span><span class="count" id="cnt-gpsjam">0</span></label>
+  <label class="layer-row"><input type="checkbox" data-layer="chokepoints" checked><span class="swatch" style="background:#64f0c8"></span><span class="label">Maritime Chokepoints</span><span class="count" id="cnt-chokepoints">0</span></label>
+
+  <div class="panel-title">Movement</div>
+  <label class="layer-row"><input type="checkbox" data-layer="air" checked><span class="swatch" style="background:#44ccff"></span><span class="label">Air Traffic Hotspots</span><span class="count" id="cnt-air">0</span></label>
+  <label class="layer-row"><input type="checkbox" data-layer="iss" checked><span class="swatch" style="background:#64f0c8"></span><span class="label">ISS Live Position</span><span class="count" id="cnt-iss">0</span></label>
+  <label class="layer-row"><input type="checkbox" data-layer="space" checked><span class="swatch" style="background:#44ccff"></span><span class="label">Space Stations</span><span class="count" id="cnt-space">0</span></label>
+
+  <div class="panel-title">Signal</div>
+  <label class="layer-row"><input type="checkbox" data-layer="gdelt"><span class="swatch" style="background:#6a8a82"></span><span class="label">GDELT News Events</span><span class="count" id="cnt-gdelt">0</span></label>
+  <label class="layer-row"><input type="checkbox" data-layer="predictions"><span class="swatch" style="background:#c58bff"></span><span class="label">Prediction Markets</span><span class="count" id="cnt-predictions">0</span></label>
+
+  <div class="panel-note">All layers sourced from open data — USGS, NASA EONET, wheretheiss.at, DeepStateMap.live, GPSJam.org, Polymarket, OpenSky, FIRMS, NOAA, EPA, ACLED, GDELT — proxied and refreshed every 15 min by the Crucix sweep. Basemap © CARTO, © OpenStreetMap contributors.</div>
+</div>
+
+<div class="legend">
+  <div><span class="sw" style="background:#ffb84c"></span>Earthquake (size = magnitude)</div>
+  <div><span class="sw" style="background:#ff5f63"></span>Conflict / hazard / jamming</div>
+  <div><span class="sw" style="background:#44ccff"></span>Air / space / atmosphere</div>
+  <div><span class="sw" style="background:#64f0c8"></span>Infrastructure / ISS</div>
+</div>
+
+<script>
+const LAYER_IDS = ['quakes','volcanoes','wildfires','storms','thermal','noaa','epa','frontlines-line','frontlines-fill',
+  'acled','gpsjam','chokepoints','air','iss','space','gdelt','predictions'];
+
+const map = new maplibregl.Map({
+  container: 'map',
+  style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  center: [15, 30],
+  zoom: 2,
+  attributionControl: true,
+});
+map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'top-right');
+
+function emptyFC() { return { type: 'FeatureCollection', features: [] }; }
+function toFC(items, toFeature) {
+  return { type: 'FeatureCollection', features: (items || []).filter(i => i.lat != null && i.lon != null).map(toFeature) };
+}
+function pointFeature(item, props) {
+  return { type: 'Feature', geometry: { type: 'Point', coordinates: [item.lon, item.lat] }, properties: props(item) };
+}
+
+let D = null;
+let popup = null;
+
+function bindPopup(layerId, buildHtml) {
+  map.on('click', layerId, (e) => {
+    const f = e.features[0];
+    if (popup) popup.remove();
+    popup = new maplibregl.Popup({ closeButton: true, maxWidth: '280px' })
+      .setLngLat(f.geometry.type === 'Point' ? f.geometry.coordinates : e.lngLat)
+      .setHTML(buildHtml(f.properties))
+      .addTo(map);
+  });
+  map.on('mouseenter', layerId, () => map.getCanvas().style.cursor = 'pointer');
+  map.on('mouseleave', layerId, () => map.getCanvas().style.cursor = '');
+}
+
+function addPointLayer(id, paint) {
+  map.addSource(id, { type: 'geojson', data: emptyFC() });
+  map.addLayer({ id, type: 'circle', source: id, paint });
+}
+
+map.on('load', () => {
+  addPointLayer('quakes', {
+    'circle-radius': ['interpolate', ['linear'], ['get', 'mag'], 2, 3, 5, 8, 7, 16],
+    'circle-color': '#ffb84c', 'circle-opacity': 0.65, 'circle-stroke-width': 1, 'circle-stroke-color': '#ffb84c',
+  });
+  addPointLayer('volcanoes', { 'circle-radius': 6, 'circle-color': '#ff5f63', 'circle-opacity': 0.8, 'circle-stroke-width': 1, 'circle-stroke-color': '#ffe' });
+  addPointLayer('wildfires', { 'circle-radius': 3.5, 'circle-color': '#ff8a3d', 'circle-opacity': 0.7 });
+  addPointLayer('storms', { 'circle-radius': 8, 'circle-color': '#44ccff', 'circle-opacity': 0.25, 'circle-stroke-width': 1.5, 'circle-stroke-color': '#44ccff' });
+  addPointLayer('thermal', { 'circle-radius': 2.5, 'circle-color': '#ff5f63', 'circle-opacity': 0.6 });
+  addPointLayer('noaa', { 'circle-radius': 6, 'circle-color': '#ffb84c', 'circle-opacity': 0.55, 'circle-stroke-width': 1, 'circle-stroke-color': '#ffb84c' });
+  addPointLayer('epa', { 'circle-radius': 4, 'circle-color': '#c58bff', 'circle-opacity': 0.7 });
+  addPointLayer('acled', { 'circle-radius': ['interpolate', ['linear'], ['get', 'fatalities'], 0, 3, 50, 12], 'circle-color': '#ff5f63', 'circle-opacity': 0.55 });
+  addPointLayer('gpsjam', { 'circle-radius': 10, 'circle-color': '#ff5f63', 'circle-opacity': ['interpolate', ['linear'], ['get', 'ratio'], 0.15, 0.15, 1, 0.55] });
+  addPointLayer('chokepoints', { 'circle-radius': 6, 'circle-color': '#64f0c8', 'circle-opacity': 0.8, 'circle-stroke-width': 1, 'circle-stroke-color': '#03140d' });
+  addPointLayer('air', { 'circle-radius': ['interpolate', ['linear'], ['get', 'total'], 0, 4, 400, 26], 'circle-color': '#44ccff', 'circle-opacity': 0.2, 'circle-stroke-width': 1.5, 'circle-stroke-color': '#44ccff' });
+  addPointLayer('iss', { 'circle-radius': 7, 'circle-color': '#64f0c8', 'circle-opacity': 0.9, 'circle-stroke-width': 2, 'circle-stroke-color': '#eafff8' });
+  addPointLayer('space', { 'circle-radius': 4, 'circle-color': '#44ccff', 'circle-opacity': 0.7 });
+  addPointLayer('gdelt', { 'circle-radius': 4, 'circle-color': '#6a8a82', 'circle-opacity': 0.5 });
+  addPointLayer('predictions', { 'circle-radius': 7, 'circle-color': '#c58bff', 'circle-opacity': 0.55, 'circle-stroke-width': 1, 'circle-stroke-color': '#c58bff' });
+
+  map.addSource('frontlines', { type: 'geojson', data: emptyFC() });
+  map.addLayer({ id: 'frontlines-fill', type: 'fill', source: 'frontlines', paint: { 'fill-color': '#ff5f63', 'fill-opacity': 0.12 } });
+  map.addLayer({ id: 'frontlines-line', type: 'line', source: 'frontlines', paint: { 'line-color': '#ff5f63', 'line-width': 1.5, 'line-opacity': 0.85 } });
+
+  bindPopup('quakes', p => `<div class="popup-title">M${p.mag} Earthquake</div><div class="popup-row">${p.place || ''}</div><div class="popup-row">Depth: <b>${p.depthKm ?? '—'} km</b></div>${p.url ? `<a class="popup-link" href="${p.url}" target="_blank" rel="noopener">USGS report →</a>` : ''}`);
+  bindPopup('volcanoes', p => `<div class="popup-title">${p.title}</div><div class="popup-row">NASA EONET · Volcanic activity</div>${p.link ? `<a class="popup-link" href="${p.link}" target="_blank" rel="noopener">Source →</a>` : ''}`);
+  bindPopup('wildfires', p => `<div class="popup-title">${p.title}</div><div class="popup-row">NASA EONET · Wildfire</div>`);
+  bindPopup('storms', p => `<div class="popup-title">${p.title}</div><div class="popup-row">NASA EONET · Severe storm</div>`);
+  bindPopup('thermal', p => `<div class="popup-title">Thermal detection</div><div class="popup-row">Region: <b>${p.region || '—'}</b></div><div class="popup-row">FRP: <b>${p.frp ?? '—'}</b></div>`);
+  bindPopup('noaa', p => `<div class="popup-title">${p.event || 'Alert'}</div><div class="popup-row">${p.headline || ''}</div><div class="popup-row">Severity: <b>${p.severity || '—'}</b></div>`);
+  bindPopup('epa', p => `<div class="popup-title">${p.location || 'RadNet station'}</div><div class="popup-row">${p.analyte || ''}: <b>${p.result ?? '—'} ${p.unit || ''}</b></div>`);
+  bindPopup('acled', p => `<div class="popup-title">${p.type || 'Conflict event'}</div><div class="popup-row">${p.location || p.country || ''}</div><div class="popup-row">Fatalities: <b>${p.fatalities ?? 0}</b> · ${p.date || ''}</div>`);
+  bindPopup('gpsjam', p => `<div class="popup-title">GPS/GNSS interference</div><div class="popup-row">Level: <b>${p.level}</b> (${Math.round(p.ratio * 100)}% bad fixes)</div><div class="popup-row">Aircraft sample: <b>${p.aircraft}</b></div>`);
+  bindPopup('chokepoints', p => `<div class="popup-title">${p.label}</div><div class="popup-row">${p.note || ''}</div>`);
+  bindPopup('air', p => `<div class="popup-title">${p.region}</div><div class="popup-row">Aircraft tracked: <b>${p.total}</b></div><div class="popup-row">High altitude: <b>${p.highAlt}</b> · No callsign: <b>${p.noCallsign}</b></div>`);
+  bindPopup('iss', p => `<div class="popup-title">International Space Station</div><div class="popup-row">Altitude: <b>${Math.round(p.altitudeKm)} km</b></div><div class="popup-row">Velocity: <b>${Math.round(p.velocityKmh)} km/h</b></div>`);
+  bindPopup('space', p => `<div class="popup-title">${p.name}</div><div class="popup-row">Tracked station (CelesTrak TLE)</div>`);
+  bindPopup('gdelt', p => `<div class="popup-title">${p.name}</div><div class="popup-row">GDELT mentions: <b>${p.count}</b></div>`);
+  bindPopup('predictions', p => `<div class="popup-title">${p.title}</div><div class="popup-row">Yes price: <b>${p.yesPrice != null ? Math.round(p.yesPrice * 100) + '%' : '—'}</b></div><div class="popup-row">Volume: <b>$${Math.round(p.volume).toLocaleString()}</b></div><a class="popup-link" href="${p.url}" target="_blank" rel="noopener">Polymarket →</a>`);
+  bindPopup('frontlines-fill', p => `<div class="popup-title">${p.name || 'Frontline zone'}</div><div class="popup-row">Source: DeepStateMap.live</div>`);
+
+  document.querySelectorAll('.layer-row input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const key = cb.dataset.layer;
+      const ids = key === 'frontlines' ? ['frontlines-line', 'frontlines-fill'] : [key];
+      ids.forEach(id => map.setLayoutProperty(id, 'visibility', cb.checked ? 'visible' : 'none'));
+    });
+  });
+
+  render(D);
+});
+
+function setCount(id, n) { const el = document.getElementById('cnt-' + id); if (el) el.textContent = n; }
+function setSrc(id, fc) { const s = map.getSource(id); if (s) s.setData(fc); }
+
+function render(data) {
+  if (!data || !map.isStyleLoaded()) return;
+  D = data;
+
+  const quakes = toFC(data.quakes, i => pointFeature(i, { mag: i.mag, place: i.place, depthKm: i.depthKm, url: i.url }));
+  setSrc('quakes', quakes); setCount('quakes', quakes.features.length);
+
+  const volcanoes = toFC(data.eonet?.volcanoes, i => pointFeature(i, { title: i.title, link: i.link }));
+  setSrc('volcanoes', volcanoes); setCount('volcanoes', volcanoes.features.length);
+
+  const wildfires = toFC(data.eonet?.wildfires, i => pointFeature(i, { title: i.title }));
+  setSrc('wildfires', wildfires); setCount('wildfires', wildfires.features.length);
+
+  const storms = toFC(data.eonet?.severeStorms, i => pointFeature(i, { title: i.title }));
+  setSrc('storms', storms); setCount('storms', storms.features.length);
+
+  const thermalPts = (data.thermal || []).flatMap(t => t.fires.map(f => ({ ...f, region: t.region })));
+  const thermal = toFC(thermalPts, i => pointFeature(i, { region: i.region, frp: i.frp }));
+  setSrc('thermal', thermal); setCount('thermal', thermal.features.length);
+
+  const noaa = toFC(data.noaa?.alerts, i => pointFeature(i, { event: i.event, headline: i.headline, severity: i.severity }));
+  setSrc('noaa', noaa); setCount('noaa', noaa.features.length);
+
+  const epa = toFC(data.epa?.stations, i => pointFeature(i, { location: i.location, analyte: i.analyte, result: i.result, unit: i.unit }));
+  setSrc('epa', epa); setCount('epa', epa.features.length);
+
+  const acled = toFC(data.acled?.deadliestEvents, i => pointFeature(i, { type: i.type, location: i.location, country: i.country, fatalities: i.fatalities, date: i.date }));
+  setSrc('acled', acled); setCount('acled', acled.features.length);
+
+  const gpsjam = toFC(data.gpsjam?.zones, i => pointFeature(i, { level: i.level, ratio: i.ratio, aircraft: i.aircraft }));
+  setSrc('gpsjam', gpsjam); setCount('gpsjam', gpsjam.features.length);
+
+  const chokepoints = toFC(data.chokepoints, i => pointFeature(i, { label: i.label, note: i.note }));
+  setSrc('chokepoints', chokepoints); setCount('chokepoints', chokepoints.features.length);
+
+  const air = toFC(data.air, i => pointFeature(i, { region: i.region, total: i.total, highAlt: i.highAlt, noCallsign: i.noCallsign }));
+  setSrc('air', air); setCount('air', air.features.length);
+
+  const issItems = data.iss ? [data.iss] : [];
+  const iss = toFC(issItems, i => pointFeature(i, { altitudeKm: i.altitudeKm, velocityKmh: i.velocityKmh }));
+  setSrc('iss', iss); setCount('iss', iss.features.length);
+
+  const space = toFC(data.space?.stationPositions, i => pointFeature(i, { name: i.name }));
+  setSrc('space', space); setCount('space', space.features.length);
+
+  const gdelt = toFC(data.gdelt?.geoPoints, i => pointFeature(i, { name: i.name, count: i.count }));
+  setSrc('gdelt', gdelt); setCount('gdelt', gdelt.features.length);
+
+  const predictions = toFC(data.predictions, i => pointFeature(i, { title: i.title, url: i.url, volume: i.volume, yesPrice: i.yesPrice }));
+  setSrc('predictions', predictions); setCount('predictions', predictions.features.length);
+
+  const frontlinesData = data.frontlines || emptyFC();
+  setSrc('frontlines', frontlinesData); setCount('frontlines', frontlinesData.features.length);
+
+  const ts = data.meta?.timestamp ? new Date(data.meta.timestamp) : new Date();
+  document.getElementById('sweepTime').textContent = 'last sweep ' + ts.toLocaleTimeString();
+}
+
+// === Live data: fetch once, then subscribe to SSE ===
+fetch('/api/data').then(r => r.json()).then(data => {
+  D = data;
+  if (map.isStyleLoaded()) render(data);
+}).catch(() => { document.getElementById('sweepTime').textContent = 'offline'; });
+
+if (typeof EventSource !== 'undefined' && location.protocol !== 'file:') {
+  (function connectSSE() {
+    const es = new EventSource('/events');
+    es.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'update' && msg.data) render(msg.data);
+      } catch {}
+    };
+    es.onerror = () => { es.close(); setTimeout(connectSSE, 5000); };
+  })();
+}
+</script>
+</body>
+</html>

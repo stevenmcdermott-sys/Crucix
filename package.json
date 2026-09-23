@@ -1,7 +1,7 @@
 ﻿{
     "name":  "ddn-intelligence-platform",
     "version":  "2.0.0",
-    "description":  "Local intelligence engine - 27 OSINT sources, live dashboard, public demo at crucix.live, auto-refresh, optional LLM layer.",
+    "description":  "Local intelligence engine - 33 OSINT sources, live dashboard, MapLibre situational map, public demo at crucix.live, auto-refresh, optional LLM layer.",
     "type":  "module",
     "scripts":  {
                     "start":  "node server.mjs",
@@ -27,7 +27,8 @@
                     "npm":  "\u003e=10"
                 },
     "dependencies":  {
-                         "express":  "^5.1.0"
+                         "express":  "^5.1.0",
+                         "h3-js":  "^4.2.1"
                      },
     "optionalDependencies":  {
                                  "discord.js":  "^14.25.1"

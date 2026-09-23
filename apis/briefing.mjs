@@ -39,10 +39,18 @@ import { briefing as kiwisdr } from './sources/kiwisdr.mjs';
 
 // === Tier 4: Space & Satellites ===
 import { briefing as space } from './sources/space.mjs';
+import { briefing as iss } from './sources/iss.mjs';
 
 // === Tier 5: Live Market Data ===
 import { briefing as yfinance } from './sources/yfinance.mjs';
 import { briefing as cisaKev } from './sources/cisa_kev.mjs';
+
+// === Tier 7: Live Map Layers (Argos-style situational awareness) ===
+import { briefing as usgsQuakes } from './sources/usgs_quakes.mjs';
+import { briefing as eonet } from './sources/eonet.mjs';
+import { briefing as frontlines } from './sources/frontlines.mjs';
+import { briefing as gpsjam } from './sources/gpsjam.mjs';
+import { briefing as predictions } from './sources/predictions.mjs';
 // === IO Intelligence (UK-focused) ===
 import { briefing as gdeltIO } from './sources/gdelt_io.mjs';
 import { briefing as telegramIO } from './sources/telegram_io.mjs';
@@ -70,7 +78,7 @@ export async function runSource(name, fn, ...args) {
 }
 
 export async function fullBriefing() {
-  console.error('[Crucix] Starting intelligence sweep — 27 sources...');
+  console.error('[Crucix] Starting intelligence sweep — 33 sources...');
   const start = Date.now();
 
   const allPromises = [
@@ -107,12 +115,20 @@ export async function fullBriefing() {
 
     // Tier 4: Space & Satellites
     runSource('Space', space),
+    runSource('ISS', iss),
 
     // Tier 5: Live Market Data
     runSource('YFinance', yfinance),
 
     // Tier 6: Cyber & Sanctions
     runSource('CISA_KEV', cisaKev),
+
+    // Tier 7: Live Map Layers
+    runSource('USGS_Quakes', usgsQuakes),
+    runSource('EONET', eonet),
+    runSource('Frontlines', frontlines),
+    runSource('GPSJam', gpsjam),
+    runSource('Predictions', predictions),
 
     // IO Intelligence
     runSource('GDELT_IO', gdeltIO),

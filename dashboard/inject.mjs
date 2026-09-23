@@ -533,6 +533,41 @@ export async function synthesize(data) {
     n: name, err: Boolean(src.error), stale: Boolean(src.stale)
   }));
 
+  // === Live map layers (Argos-style) ===
+  const quakesData = data.sources.USGS_Quakes || {};
+  const quakes = (quakesData.quakes || []).map(q => ({
+    mag: q.mag, place: q.place, time: q.time, lat: q.lat, lon: q.lon,
+    depthKm: q.depthKm, tsunami: q.tsunami, alert: q.alert, url: q.url,
+  }));
+
+  const eonetData = data.sources.EONET || {};
+  const eonetLayer = {
+    wildfires: (eonetData.wildfires || []).map(e => ({ title: e.title, lat: e.lat, lon: e.lon, date: e.date, link: e.link })),
+    volcanoes: (eonetData.volcanoes || []).map(e => ({ title: e.title, lat: e.lat, lon: e.lon, date: e.date, link: e.link })),
+    severeStorms: (eonetData.severeStorms || []).map(e => ({ title: e.title, lat: e.lat, lon: e.lon, date: e.date, link: e.link })),
+  };
+
+  const issData = data.sources.ISS || {};
+  const issLive = issData.lat != null ? {
+    lat: issData.lat, lon: issData.lon, altitudeKm: issData.altitudeKm,
+    velocityKmh: issData.velocityKmh, visibility: issData.visibility,
+  } : null;
+
+  const frontlinesData = data.sources.Frontlines || {};
+  const frontlines = frontlinesData.geojson || null;
+
+  const gpsjamData = data.sources.GPSJam || {};
+  const gpsjam = {
+    date: gpsjamData.date || null,
+    zones: (gpsjamData.zones || []).map(z => ({ lat: z.lat, lon: z.lon, ratio: z.ratio, level: z.level, aircraft: z.aircraft })),
+  };
+
+  const predictionsData = data.sources.Predictions || {};
+  const predictions = (predictionsData.markets || []).map(m => {
+    const geo = geoTagText(m.title);
+    return { title: m.title, url: m.url, volume: m.volume, yesPrice: m.yesPrice, endDate: m.endDate, lat: geo?.lat ?? null, lon: geo?.lon ?? null };
+  });
+
   // === Yahoo Finance live market data ===
   const yfData = data.sources.YFinance || {};
   const yfQuotes = yfData.quotes || {};
@@ -610,6 +645,8 @@ export async function synthesize(data) {
     ideas: [], ideasSource: 'disabled',
     // newsFeed for ticker (merged RSS + GDELT + Telegram)
     newsFeed: buildNewsFeed(news, gdeltData, tgUrgent, tgTop),
+    // Live map layers (Argos-style situational awareness)
+    quakes, eonet: eonetLayer, iss: issLive, frontlines, gpsjam, predictions,
   };
 
   return V2;
