@@ -858,7 +858,8 @@ function bindMapLifecycleEvents(){
 function renderMapLegend(){
   document.getElementById('mapLegend').innerHTML=
     [{c:'#64f0c8',l:t('map.airTraffic','Air Traffic')},{c:'#ff5f63',l:t('map.thermalFire','Thermal/Fire')},{c:'rgba(255,120,80,0.8)',l:t('map.conflict','Conflict')},{c:'#44ccff',l:t('map.sdrReceiver','SDR Receiver')},
-     {c:'#ffe082',l:t('map.nuclearSite','Nuclear Site')},{c:'#b388ff',l:t('map.chokepoint','Chokepoint')},{c:'#ffb84c',l:t('map.osintEvent','OSINT Event')},{c:'#69f0ae',l:t('map.healthAlert','Health Alert')},{c:'#81d4fa',l:t('map.worldNews','World News')},{c:'#ff9800',l:t('map.weatherAlert','Weather Alert')},{c:'#cddc39',l:t('map.epaRadNet','EPA RadNet')},{c:'#ffffff',l:t('map.spaceStation','Space Station')},{c:'#6495ed',l:t('map.gdeltEvent','GDELT Event')}]
+     {c:'#ffe082',l:t('map.nuclearSite','Nuclear Site')},{c:'#b388ff',l:t('map.chokepoint','Chokepoint')},{c:'#ffb84c',l:t('map.osintEvent','OSINT Event')},{c:'#69f0ae',l:t('map.healthAlert','Health Alert')},{c:'#81d4fa',l:t('map.worldNews','World News')},{c:'#ff9800',l:t('map.weatherAlert','Weather Alert')},{c:'#cddc39',l:t('map.epaRadNet','EPA RadNet')},{c:'#ffffff',l:t('map.spaceStation','Space Station')},{c:'#6495ed',l:t('map.gdeltEvent','GDELT Event')},
+     {c:'#ffb84c',l:t('map.earthquake','Earthquake')},{c:'#ff8a3d',l:t('map.wildfireEonet','Wildfire (EONET)')},{c:'#64f0c8',l:t('map.issLive','ISS Live')},{c:'#ff5f63',l:t('map.frontline','Frontline')},{c:'#c58bff',l:t('map.prediction','Prediction Market')}]
     .map(x=>`<div class="leg-item"><div class="leg-dot" style="background:${x.c}"></div>${x.l}</div>`).join('');
 }
 
@@ -945,6 +946,13 @@ function initGlobe(){
     .labelDotRadius(0)
     .labelAltitude(0.012)
     .labelResolution(2)
+    // Polygons layer (Ukraine frontline / territorial control zones)
+    .polygonAltitude(0.006)
+    .polygonCapColor(() => 'rgba(255,95,99,0.28)')
+    .polygonSideColor(() => 'rgba(255,95,99,0.1)')
+    .polygonStrokeColor(() => 'rgba(255,95,99,0.75)')
+    .polygonLabel(d => `<b>${d.properties?.name || 'Frontline zone'}</b><br><span style="opacity:0.7">DeepStateMap.live</span>`)
+    .polygonsTransitionDuration(300)
     (document.getElementById('globeViz'));
 
   // Style the WebGL scene
@@ -1150,9 +1158,66 @@ function plotMarkers(){
     });
   });
 
+  // === Earthquakes (USGS) ===
+  (D.quakes||[]).forEach(q=>{
+    if(q.lat==null||q.lon==null) return;
+    points.push({
+      lat:q.lat, lng:q.lon, size:0.15+Math.min(q.mag/8,0.4), alt:0.009,
+      color: q.mag>=6 ? 'rgba(255,95,99,0.85)' : 'rgba(255,184,76,0.75)', type:'quake', priority: q.mag>=5.5?1:3,
+      popHead:`M${q.mag} Earthquake`, popMeta:'USGS'+(q.depthKm!=null?' · '+q.depthKm.toFixed(0)+'km depth':''),
+      popText:q.place||''
+    });
+  });
+
+  // === NASA EONET: volcanoes, wildfires, severe storms ===
+  (D.eonet?.volcanoes||[]).forEach(v=>{
+    points.push({ lat:v.lat, lng:v.lon, size:0.3, alt:0.014, color:'rgba(255,95,99,0.85)', type:'volcano', priority:2,
+      popHead:v.title, popMeta:'NASA EONET · Volcanic activity', popText:'' });
+  });
+  (D.eonet?.wildfires||[]).forEach(w=>{
+    points.push({ lat:w.lat, lng:w.lon, size:0.14, alt:0.006, color:'rgba(255,138,61,0.7)', type:'wildfire', priority:3,
+      popHead:w.title, popMeta:'NASA EONET · Wildfire', popText:'' });
+  });
+  (D.eonet?.severeStorms||[]).forEach(s=>{
+    points.push({ lat:s.lat, lng:s.lon, size:0.35, alt:0.016, color:'rgba(68,204,255,0.35)', type:'storm', priority:2,
+      popHead:s.title, popMeta:'NASA EONET · Severe storm', popText:'' });
+  });
+
+  // === ISS live position (wheretheiss.at — distinct from the CelesTrak/TLE-estimated Space Stations layer below) ===
+  if(D.iss){
+    points.push({
+      lat:D.iss.lat, lng:D.iss.lon, size:0.5, alt:0.05,
+      color:'rgba(100,240,200,0.95)', type:'iss-live', priority:1,
+      popHead:'International Space Station', popMeta:`${Math.round(D.iss.altitudeKm)} km · ${Math.round(D.iss.velocityKmh)} km/h`,
+      popText:'Live position'
+    });
+    labels.push({lat:D.iss.lat, lng:D.iss.lon+3, text:'ISS', size:0.4, color:'rgba(100,240,200,0.85)'});
+  }
+
+  // === GPS/GNSS jamming zones (GPSJam.org) ===
+  (D.gpsjam?.zones||[]).forEach(z=>{
+    points.push({
+      lat:z.lat, lng:z.lon, size:0.2+Math.min(z.ratio*0.4,0.4), alt:0.011,
+      color:`rgba(255,95,99,${Math.min(0.3+z.ratio*0.5,0.85)})`, type:'gpsjam', priority: z.level==='high'?2:3,
+      popHead:'GPS/GNSS Interference', popMeta:'GPSJam.org · '+z.level,
+      popText:`${Math.round(z.ratio*100)}% bad fixes, ${z.aircraft} aircraft sampled`
+    });
+  });
+
+  // === Prediction markets (Polymarket, geo-tagged by title keyword) ===
+  (D.predictions||[]).filter(p=>p.lat!=null&&p.lon!=null).forEach(p=>{
+    points.push({
+      lat:p.lat, lng:p.lon, size:0.3, alt:0.013,
+      color:'rgba(197,139,255,0.8)', type:'prediction', priority:2,
+      popHead:p.title, popMeta:'Polymarket'+(p.yesPrice!=null?' · '+Math.round(p.yesPrice*100)+'% yes':''),
+      popText:'Volume: $'+Math.round(p.volume||0).toLocaleString()
+    });
+  });
+
   // Set points on globe
   globe.pointsData(points);
   globe.labelsData(labels);
+  globe.polygonsData((D.frontlines?.features)||[]);
 
   // === ACLED CONFLICT EVENTS (pulsing rings) ===
   const conflictRings = (D.acled?.deadliestEvents || []).filter(e => e.lat && e.lon).map(e => {
@@ -1492,6 +1557,13 @@ function drawFlatMap(){
 }
 
 function plotFlatMarkers(){
+  // Ukraine frontline (background territorial shading, drawn under markers)
+  (D.frontlines?.features||[]).forEach(f=>{
+    flatG.append('path').datum(f).attr('class','frontline-zone').attr('d',flatPath)
+      .attr('fill','rgba(255,95,99,0.16)').attr('stroke','rgba(255,95,99,0.65)').attr('stroke-width',1)
+      .style('cursor','pointer')
+      .on('click',ev=>{ev.stopPropagation();showPopup(ev,f.properties?.name||'Frontline zone','DeepStateMap.live','Territorial control')});
+  });
   const mg=flatG.append('g').attr('class','markers');
   const proj=flatProjection;
   const addPt=(lat,lon,r,fill,stroke,onClick,priority)=>{
@@ -1547,6 +1619,32 @@ function plotFlatMarkers(){
   });
   // GDELT geo events
   (D.gdelt?.geoPoints||[]).forEach(g=>{addPt(g.lat,g.lon,2.5,'rgba(100,149,237,0.5)','rgba(100,149,237,0.2)',ev=>showPopup(ev,'GDELT Event',g.name||'','GDELT · '+g.count+' reports'),3)});
+  // Earthquakes (USGS)
+  (D.quakes||[]).forEach(q=>{
+    if(q.lat==null||q.lon==null) return;
+    addPt(q.lat,q.lon,3+Math.min(q.mag,7),q.mag>=6?'rgba(255,95,99,0.75)':'rgba(255,184,76,0.7)','rgba(255,184,76,0.25)',
+      ev=>showPopup(ev,`M${q.mag} Earthquake`,q.place||'','USGS'+(q.depthKm!=null?' · '+q.depthKm.toFixed(0)+'km depth':'')),q.mag>=5.5?1:3);
+  });
+  // NASA EONET: volcanoes, wildfires, severe storms
+  (D.eonet?.volcanoes||[]).forEach(v=>{addPt(v.lat,v.lon,4,'rgba(255,95,99,0.75)','rgba(255,95,99,0.25)',ev=>showPopup(ev,v.title,'','NASA EONET · Volcano'),2)});
+  (D.eonet?.wildfires||[]).forEach(w=>{addPt(w.lat,w.lon,2,'rgba(255,138,61,0.65)','rgba(255,138,61,0.2)',ev=>showPopup(ev,w.title,'','NASA EONET · Wildfire'),3)});
+  (D.eonet?.severeStorms||[]).forEach(s=>{addPt(s.lat,s.lon,5,'rgba(68,204,255,0.35)','rgba(68,204,255,0.5)',ev=>showPopup(ev,s.title,'','NASA EONET · Severe storm'),2)});
+  // ISS live position (wheretheiss.at)
+  if(D.iss){
+    const g=addPt(D.iss.lat,D.iss.lon,5,'rgba(100,240,200,0.9)','rgba(100,240,200,0.4)',
+      ev=>showPopup(ev,'International Space Station',`${Math.round(D.iss.altitudeKm)} km · ${Math.round(D.iss.velocityKmh)} km/h`,'Live position (wheretheiss.at)'),1);
+    if(g) g.append('text').attr('class','marker-label').attr('x',8).attr('y',3).attr('fill','rgba(100,240,200,0.8)').attr('font-size','8px').attr('font-family','var(--mono)').text('ISS');
+  }
+  // GPS/GNSS jamming zones (GPSJam.org)
+  (D.gpsjam?.zones||[]).forEach(z=>{
+    addPt(z.lat,z.lon,3+Math.min(z.ratio*6,5),`rgba(255,95,99,${Math.min(0.3+z.ratio*0.5,0.85)})`,'rgba(255,95,99,0.2)',
+      ev=>showPopup(ev,'GPS/GNSS Interference',`${Math.round(z.ratio*100)}% bad fixes, ${z.aircraft} aircraft sampled`,'GPSJam.org · '+z.level),z.level==='high'?2:3);
+  });
+  // Prediction markets (Polymarket, geo-tagged)
+  (D.predictions||[]).filter(p=>p.lat!=null&&p.lon!=null).forEach(p=>{
+    addPt(p.lat,p.lon,4,'rgba(197,139,255,0.75)','rgba(197,139,255,0.3)',
+      ev=>showPopup(ev,p.title,'Volume: $'+Math.round(p.volume||0).toLocaleString(),'Polymarket'+(p.yesPrice!=null?' · '+Math.round(p.yesPrice*100)+'% yes':'')),2);
+  });
   // ACLED
   (D.acled?.deadliestEvents||[]).filter(e=>e.lat&&e.lon).forEach(e=>{
     const[x,y]=proj([e.lon,e.lat]);if(!x||!y)return;
