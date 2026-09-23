@@ -133,12 +133,13 @@ function emptyFC() { return { type: 'FeatureCollection', features: [] }; }
 function toFC(items, toFeature) {
   return { type: 'FeatureCollection', features: (items || []).filter(i => i.lat != null && i.lon != null).map(toFeature) };
 }
-function pointFeature(item, props) {
-  return { type: 'Feature', geometry: { type: 'Point', coordinates: [item.lon, item.lat] }, properties: props(item) };
+function pointFeature(item, properties) {
+  return { type: 'Feature', geometry: { type: 'Point', coordinates: [item.lon, item.lat] }, properties };
 }
 
 let D = null;
 let popup = null;
+let mapReady = false;
 
 function bindPopup(layerId, buildHtml) {
   map.on('click', layerId, (e) => {
@@ -207,6 +208,7 @@ map.on('load', () => {
     });
   });
 
+  mapReady = true;
   render(D);
 });
 
@@ -214,7 +216,10 @@ function setCount(id, n) { const el = document.getElementById('cnt-' + id); if (
 function setSrc(id, fc) { const s = map.getSource(id); if (s) s.setData(fc); }
 
 function render(data) {
-  if (!data || !map.isStyleLoaded()) return;
+  // isStyleLoaded() is not a reliable readiness gate here — it flips back to
+  // false whenever background basemap tiles are still streaming in, which is
+  // most of the time. `mapReady` is set once, from the 'load' event, instead.
+  if (!data || !mapReady) return;
   D = data;
 
   const quakes = toFC(data.quakes, i => pointFeature(i, { mag: i.mag, place: i.place, depthKm: i.depthKm, url: i.url }));
@@ -274,7 +279,7 @@ function render(data) {
 // === Live data: fetch once, then subscribe to SSE ===
 fetch('/api/data').then(r => r.json()).then(data => {
   D = data;
-  if (map.isStyleLoaded()) render(data);
+  render(data);
 }).catch(() => { document.getElementById('sweepTime').textContent = 'offline'; });
 
 if (typeof EventSource !== 'undefined' && location.protocol !== 'file:') {
