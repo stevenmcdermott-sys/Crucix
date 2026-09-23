@@ -555,6 +555,7 @@ export async function synthesize(data) {
 
   const frontlinesData = data.sources.Frontlines || {};
   const frontlines = frontlinesData.geojson || null;
+  const frontlineMarkers = frontlinesData.markers || [];
 
   const gpsjamData = data.sources.GPSJam || {};
   const gpsjam = {
@@ -646,7 +647,7 @@ export async function synthesize(data) {
     // newsFeed for ticker (merged RSS + GDELT + Telegram)
     newsFeed: buildNewsFeed(news, gdeltData, tgUrgent, tgTop),
     // Live map layers (Argos-style situational awareness)
-    quakes, eonet: eonetLayer, iss: issLive, frontlines, gpsjam, predictions,
+    quakes, eonet: eonetLayer, iss: issLive, frontlines, frontlineMarkers, gpsjam, predictions,
   };
 
   return V2;

@@ -1214,6 +1214,15 @@ function plotMarkers(){
     });
   });
 
+  // === Frontline marked locations (DeepStateMap.live — equipment losses, named strategic points) ===
+  (D.frontlineMarkers||[]).forEach(m=>{
+    points.push({
+      lat:m.lat, lng:m.lon, size:0.18, alt:0.007,
+      color:'rgba(255,95,99,0.6)', type:'frontline-event', priority:3,
+      popHead:m.name, popMeta:'DeepStateMap.live', popText:m.description||''
+    });
+  });
+
   // Set points on globe
   globe.pointsData(points);
   globe.labelsData(labels);
@@ -1644,6 +1653,11 @@ function plotFlatMarkers(){
   (D.predictions||[]).filter(p=>p.lat!=null&&p.lon!=null).forEach(p=>{
     addPt(p.lat,p.lon,4,'rgba(197,139,255,0.75)','rgba(197,139,255,0.3)',
       ev=>showPopup(ev,p.title,'Volume: $'+Math.round(p.volume||0).toLocaleString(),'Polymarket'+(p.yesPrice!=null?' · '+Math.round(p.yesPrice*100)+'% yes':'')),2);
+  });
+  // Frontline marked locations (DeepStateMap.live)
+  (D.frontlineMarkers||[]).forEach(m=>{
+    addPt(m.lat,m.lon,2.5,'rgba(255,95,99,0.55)','rgba(255,95,99,0.2)',
+      ev=>showPopup(ev,m.name,m.description||'','DeepStateMap.live'),3);
   });
   // ACLED
   (D.acled?.deadliestEvents||[]).filter(e=>e.lat&&e.lon).forEach(e=>{
