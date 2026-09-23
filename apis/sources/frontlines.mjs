@@ -14,6 +14,23 @@ function stripHtml(html) {
   return html.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200) || null;
 }
 
+// DeepStateMap's polygons are correctly RFC 7946 (counter-clockwise exterior
+// rings). But d3-geo and three-globe's polygon layer both predate the RFC and
+// use the opposite convention — feed them RFC-correct winding and every ring
+// inverts, filling the complement (the whole rest of the sphere) instead of
+// the small intended area. Since every ring here is uniformly CCW, every
+// polygon inverts identically — which is exactly what "one solid red globe"
+// looks like. Reverse each ring so it renders as the small area it should be.
+function reverseRingWinding(geometry) {
+  if (geometry.type === 'Polygon') {
+    return { type: 'Polygon', coordinates: geometry.coordinates.map(ring => ring.slice().reverse()) };
+  }
+  if (geometry.type === 'MultiPolygon') {
+    return { type: 'MultiPolygon', coordinates: geometry.coordinates.map(poly => poly.map(ring => ring.slice().reverse())) };
+  }
+  return geometry;
+}
+
 export async function briefing() {
   try {
     const data = await safeFetch(URL, { timeout: 20000 });
@@ -35,7 +52,7 @@ export async function briefing() {
     // sweep stays light — good enough for map rendering at world/region zoom.
     const trimmedPolygons = polygons.slice(0, MAX_POLYGONS).map(f => ({
       type: 'Feature',
-      geometry: f.geometry,
+      geometry: reverseRingWinding(f.geometry),
       properties: {
         name: f.properties?.name || null,
         description: f.properties?.description || null,
