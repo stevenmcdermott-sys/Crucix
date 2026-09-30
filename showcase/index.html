@@ -3,416 +3,407 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DDN — Data-Driven Intelligence Ecosystem</title>
-<meta name="description" content="30 OSINT sources. 7 LLM providers. Theater Intelligence. IO Narrative Detection. Real-time cross-domain signal correlation at scale.">
-<meta property="og:title" content="DDN — Data-Driven Intelligence Ecosystem">
-<meta property="og:description" content="30 live sources. Real-time cross-domain signal correlation. Theater Intelligence Pages. IO Narrative detection powered by Claude.">
+<title>DDN — Data-Driven Intelligence Network</title>
+<meta name="description" content="30 live OSINT sources. 7 LLM providers. Theater Intelligence. IO Narrative Detection. Real-time cross-domain signal correlation.">
 <meta property="og:image" content="../docs/dashboard.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#020408;--panel:rgba(6,14,22,0.9);--glass:rgba(8,18,30,0.65);
-  --border:rgba(100,240,200,0.11);--border-b:rgba(100,240,200,0.28);
-  --text:#e8f4f0;--dim:#5a7a72;--accent:#64f0c8;--accent2:#44ccff;
+  --bg:#020408;--panel:rgba(6,14,22,0.92);--glass:rgba(8,18,30,0.7);
+  --border:rgba(100,240,200,0.1);--border-b:rgba(100,240,200,0.28);
+  --text:#e8f4f0;--dim:#5a7872;--accent:#64f0c8;--accent2:#44ccff;
   --warn:#ffb84c;--danger:#ff5f63;--purple:#b388ff;--green:#69f0ae;
   --mono:'IBM Plex Mono',monospace;--sans:'Space Grotesk',sans-serif;
 }
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);overflow-x:hidden;line-height:1.6}
-::-webkit-scrollbar{width:3px}
-::-webkit-scrollbar-thumb{background:rgba(100,240,200,0.18)}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:rgba(100,240,200,0.2)}
 
-/* ── GLOBAL BACKGROUND ── */
+/* BG */
 .bg-grid{position:fixed;inset:0;pointer-events:none;z-index:0;
-  background-image:linear-gradient(rgba(100,240,200,0.022) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(100,240,200,0.022) 1px,transparent 1px);
-  background-size:55px 55px;
-  mask-image:radial-gradient(ellipse at 50% 20%,black 10%,transparent 65%)}
+  background-image:linear-gradient(rgba(100,240,200,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(100,240,200,0.02) 1px,transparent 1px);
+  background-size:56px 56px;mask-image:radial-gradient(ellipse at 50% 20%,black 5%,transparent 70%)}
 .scanline{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
 .scanline::after{content:'';position:absolute;left:0;width:100%;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(100,240,200,0.07),transparent);
-  animation:scan 8s linear infinite}
+  background:linear-gradient(90deg,transparent,rgba(100,240,200,0.06),transparent);animation:scan 9s linear infinite}
 @keyframes scan{0%{top:-2px}100%{top:100%}}
 
-/* ── NAV ── */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;
-  padding:13px 44px;display:flex;align-items:center;justify-content:space-between;
-  background:rgba(2,4,8,0.85);backdrop-filter:blur(24px);
-  border-bottom:1px solid var(--border)}
-.nav-logo{font-family:var(--mono);font-weight:700;font-size:16px;
-  letter-spacing:0.16em;color:var(--accent);text-decoration:none}
-.nav-logo sup{font-size:9px;color:var(--dim);letter-spacing:0.1em;font-weight:300;margin-left:4px}
-.nav-links{display:flex;gap:28px;list-style:none}
-.nav-links a{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;
-  text-transform:uppercase;color:var(--dim);text-decoration:none;transition:color 0.2s}
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:12px 40px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(2,4,8,0.88);backdrop-filter:blur(24px);border-bottom:1px solid var(--border)}
+.nav-logo{font-family:var(--mono);font-weight:700;font-size:15px;letter-spacing:0.16em;
+  color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:10px}
+.nav-logo .badge{font-size:9px;padding:2px 7px;border:1px solid rgba(105,240,174,0.25);
+  color:var(--green);letter-spacing:0.1em;font-weight:400}
+.nav-links{display:flex;gap:24px;list-style:none}
+.nav-links a{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--dim);text-decoration:none;transition:color 0.2s}
 .nav-links a:hover{color:var(--accent)}
-.nav-right{display:flex;gap:10px;align-items:center}
-.pill-live{display:flex;align-items:center;gap:6px;padding:5px 12px;
-  font-family:var(--mono);font-size:10px;letter-spacing:0.1em;
-  border:1px solid rgba(105,240,174,0.25);color:var(--green);
-  background:rgba(105,240,174,0.06)}
-.pill-live .dot{width:6px;height:6px;border-radius:50%;background:var(--green);
-  box-shadow:0 0 6px var(--green);animation:blink 1.4s ease-in-out infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
-.btn-nav{padding:7px 18px;border:1px solid rgba(100,240,200,0.28);
-  color:var(--accent);font-family:var(--mono);font-size:11px;
-  letter-spacing:0.1em;text-transform:uppercase;text-decoration:none;
-  background:rgba(100,240,200,0.05);transition:all 0.2s}
-.btn-nav:hover{background:rgba(100,240,200,0.12);border-color:var(--accent)}
+.nav-cta{padding:7px 18px;border:1px solid var(--border-b);color:var(--accent);
+  font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;
+  text-decoration:none;background:rgba(100,240,200,0.05);transition:all 0.2s}
+.nav-cta:hover{background:rgba(100,240,200,0.12)}
 
-/* ── SHARED ── */
+/* SHARED */
 section{position:relative;z-index:1}
-.container{max-width:1180px;margin:0 auto;padding:0 40px}
-.sec-label{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;
-  text-transform:uppercase;color:var(--accent);margin-bottom:10px;opacity:0.75}
-.sec-title{font-size:clamp(26px,4vw,50px);font-weight:700;line-height:1.12;margin-bottom:18px}
-.sec-sub{font-size:15px;color:var(--dim);max-width:640px;line-height:1.75}
-.reveal{opacity:0;transform:translateY(28px)}
-.panel{border:1px solid var(--border);background:var(--glass);
-  backdrop-filter:blur(18px);position:relative;overflow:hidden}
-.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(100,240,200,0.14),transparent);pointer-events:none}
+.container{max-width:1200px;margin:0 auto;padding:0 40px}
+.sec-label{font-family:var(--mono);font-size:10px;letter-spacing:0.22em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:10px;opacity:0.8;display:flex;align-items:center;gap:10px}
+.sec-label::after{content:'';flex:1;max-width:40px;height:1px;background:var(--accent);opacity:0.3}
+.sec-title{font-size:clamp(26px,4vw,52px);font-weight:700;line-height:1.1;margin-bottom:16px}
+.sec-sub{font-size:15px;color:var(--dim);max-width:620px;line-height:1.75}
+.reveal{opacity:0;transform:translateY(26px)}
+.new-badge{display:inline-block;font-family:var(--mono);font-size:9px;padding:2px 6px;
+  border:1px solid rgba(255,184,76,0.3);color:var(--warn);letter-spacing:0.08em;
+  margin-left:6px;vertical-align:middle;background:rgba(255,184,76,0.06)}
 
 /* ── HERO ── */
-#hero{height:100vh;min-height:680px;display:flex;align-items:center;
-  justify-content:center;text-align:center;position:relative;overflow:hidden}
-#hero-canvas{position:absolute;inset:0;z-index:0}
-.hero-inner{position:relative;z-index:2;max-width:860px;padding:0 20px}
-.hero-kicker{display:flex;align-items:center;justify-content:center;gap:14px;
-  font-family:var(--mono);font-size:11px;letter-spacing:0.22em;
-  text-transform:uppercase;color:var(--accent);margin-bottom:22px}
-.hero-kicker::before,.hero-kicker::after{content:'';height:1px;width:50px;
+#hero{height:100vh;min-height:700px;position:relative;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;text-align:center}
+.hero-bg{position:absolute;inset:0;z-index:0}
+.hero-bg img{width:100%;height:100%;object-fit:cover;object-position:top center;
+  filter:brightness(0.12) saturate(1.4) hue-rotate(10deg)}
+.hero-bg::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(to bottom,rgba(2,4,8,0.3) 0%,rgba(2,4,8,0.5) 50%,var(--bg) 100%)}
+.hero-glow{position:absolute;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 50% 40%,rgba(100,240,200,0.07) 0%,transparent 60%),
+    radial-gradient(ellipse at 20% 60%,rgba(68,204,255,0.05) 0%,transparent 50%)}
+.hero-inner{position:relative;z-index:2;max-width:880px;padding:0 20px}
+.hero-kicker{font-family:var(--mono);font-size:11px;letter-spacing:0.24em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:14px}
+.hero-kicker::before,.hero-kicker::after{content:'';height:1px;width:44px;
   background:linear-gradient(90deg,transparent,var(--accent))}
 .hero-kicker::after{background:linear-gradient(90deg,var(--accent),transparent)}
-h1.hero-title{font-size:clamp(44px,7.5vw,92px);font-weight:700;
-  line-height:1.03;letter-spacing:-0.025em;margin-bottom:14px}
-h1.hero-title .hi{color:var(--accent)}
-.hero-type{font-family:var(--mono);font-size:clamp(13px,2vw,19px);
-  color:var(--dim);margin-bottom:44px;letter-spacing:0.04em;min-height:30px}
-.hero-type .cur{display:inline-block;width:2px;height:1.1em;
-  background:var(--accent);margin-left:2px;vertical-align:middle;
-  animation:cur 1s step-end infinite}
-@keyframes cur{0%,100%{opacity:1}50%{opacity:0}}
-.hero-ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-.btn-primary{padding:14px 34px;background:var(--accent);color:#010306;
-  font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:0.1em;
-  text-transform:uppercase;text-decoration:none;
-  box-shadow:0 0 28px rgba(100,240,200,0.28);transition:all 0.25s}
-.btn-primary:hover{background:#7effd4;box-shadow:0 0 44px rgba(100,240,200,0.5)}
-.btn-outline{padding:14px 34px;border:1px solid var(--border-b);
-  color:var(--text);font-family:var(--mono);font-size:12px;
-  letter-spacing:0.1em;text-transform:uppercase;text-decoration:none;
-  background:rgba(255,255,255,0.025);transition:all 0.25s}
-.btn-outline:hover{border-color:var(--accent2);color:var(--accent2);
-  background:rgba(68,204,255,0.07)}
-.hero-scroll{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
-  z-index:2;display:flex;flex-direction:column;align-items:center;gap:7px;
-  font-family:var(--mono);font-size:10px;letter-spacing:0.14em;
-  text-transform:uppercase;color:var(--dim)}
-.scroll-bar{width:1px;height:36px;background:linear-gradient(to bottom,var(--accent),transparent);
-  animation:sb 2s ease-in-out infinite}
-@keyframes sb{0%,100%{opacity:0.3}50%{opacity:1}}
+h1{font-size:clamp(48px,8vw,96px);font-weight:700;line-height:1.02;letter-spacing:-0.03em;margin-bottom:12px}
+h1 .hi{color:var(--accent);display:block}
+.hero-sub{font-family:var(--mono);font-size:clamp(13px,1.8vw,18px);color:var(--dim);
+  margin-bottom:44px;letter-spacing:0.04em;min-height:28px}
+.hero-sub .cur{display:inline-block;width:2px;height:1em;background:var(--accent);
+  margin-left:2px;vertical-align:middle;animation:blink 1s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.hero-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.btn-p{padding:14px 36px;background:var(--accent);color:#010306;font-family:var(--mono);
+  font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+  text-decoration:none;box-shadow:0 0 32px rgba(100,240,200,0.3);transition:all 0.25s}
+.btn-p:hover{background:#80ffdc;box-shadow:0 0 48px rgba(100,240,200,0.55)}
+.btn-g{padding:14px 36px;border:1px solid var(--border-b);color:var(--text);
+  font-family:var(--mono);font-size:12px;letter-spacing:0.1em;text-transform:uppercase;
+  text-decoration:none;background:rgba(255,255,255,0.03);transition:all 0.25s}
+.btn-g:hover{border-color:var(--accent2);color:var(--accent2);background:rgba(68,204,255,0.07)}
+.hero-stats{position:absolute;bottom:0;left:0;right:0;z-index:2;
+  display:flex;justify-content:center;gap:0;border-top:1px solid var(--border)}
+.hs{flex:1;max-width:200px;padding:18px;text-align:center;
+  border-right:1px solid var(--border);background:rgba(2,4,8,0.7);backdrop-filter:blur(12px)}
+.hs:last-child{border-right:none}
+.hs .n{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--accent);display:block}
+.hs .l{font-size:11px;color:var(--dim);letter-spacing:0.07em;text-transform:uppercase}
 
-/* ── ECOSYSTEM STRIP ── */
-#ecosystem{padding:72px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
-  background:rgba(4,10,18,0.5)}
-.eco-row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
-.eco-card{flex:1;min-width:200px;max-width:260px;padding:28px 24px;
-  border:1px solid var(--border);background:rgba(6,14,22,0.7);
-  backdrop-filter:blur(16px);position:relative;overflow:hidden;
-  transition:border-color 0.3s,background 0.3s;text-align:center}
-.eco-card:hover{border-color:rgba(100,240,200,0.25);background:rgba(10,22,36,0.85)}
-.eco-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:var(--accent-line,var(--accent));opacity:0.5}
-.eco-card.blue{--accent-line:var(--accent2)}
-.eco-card.purple{--accent-line:var(--purple)}
-.eco-card.warn{--accent-line:var(--warn)}
-.eco-icon{font-size:28px;margin-bottom:12px}
-.eco-name{font-family:var(--mono);font-size:13px;font-weight:700;
-  letter-spacing:0.1em;text-transform:uppercase;color:var(--text);margin-bottom:6px}
-.eco-desc{font-size:12px;color:var(--dim);line-height:1.6}
-.eco-tag{display:inline-block;margin-top:10px;font-family:var(--mono);
-  font-size:10px;padding:3px 8px;border:1px solid var(--border);
-  color:var(--dim);letter-spacing:0.06em}
+/* ── SOURCE TICKER ── */
+#ticker{padding:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  background:rgba(4,10,18,0.6);overflow:hidden;white-space:nowrap}
+.ticker-track{display:inline-flex;animation:ticker 40s linear infinite}
+.ticker-track:hover{animation-play-state:paused}
+.tick-item{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;
+  font-family:var(--mono);font-size:11px;letter-spacing:0.07em;color:var(--dim);
+  border-right:1px solid var(--border);text-decoration:none;transition:color 0.2s;
+  white-space:nowrap}
+.tick-item:hover{color:var(--accent)}
+.tick-item .ti{font-size:14px}
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
-/* ── STAT TICKER ── */
-#stats{padding:64px 0}
-.stats-row{display:flex;justify-content:space-around;flex-wrap:wrap;gap:36px}
-.stat{text-align:center}
-.stat-n{font-family:var(--mono);font-size:clamp(44px,7vw,78px);font-weight:700;
-  color:var(--accent);line-height:1;display:block}
-.stat-unit{font-family:var(--mono);font-size:16px;color:var(--accent2)}
-.stat-l{font-size:12px;color:var(--dim);letter-spacing:0.1em;
-  text-transform:uppercase;margin-top:8px}
+/* ── HERO SCREENSHOT SHOWCASE ── */
+#screenshots{padding:100px 0}
+.ss-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;gap:3px;margin-top:56px}
+.ss-main{grid-column:1/-1;position:relative;overflow:hidden;cursor:zoom-in;
+  border:1px solid var(--border)}
+.ss-main img{width:100%;display:block;transition:transform 0.6s,filter 0.4s;
+  filter:brightness(0.9) saturate(1.1)}
+.ss-main:hover img{transform:scale(1.02);filter:brightness(1) saturate(1.2)}
+.ss-thumb{position:relative;overflow:hidden;cursor:zoom-in;border:1px solid var(--border)}
+.ss-thumb img{width:100%;height:280px;object-fit:cover;display:block;
+  transition:transform 0.6s,filter 0.4s;filter:brightness(0.88) saturate(1.1)}
+.ss-thumb:hover img{transform:scale(1.04);filter:brightness(1) saturate(1.2)}
+.ss-cap{position:absolute;bottom:0;left:0;right:0;padding:12px 16px;
+  background:linear-gradient(transparent,rgba(2,4,8,0.95));
+  font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--dim)}
+.ss-main .ss-cap{font-size:12px;padding:16px 20px}
+.ss-main:hover .ss-cap,.ss-thumb:hover .ss-cap{color:var(--accent)}
 
-/* ── DASHBOARD SHOWCASE ── */
-#showcase{padding:110px 0}
-.gallery{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:60px 0}
-.g-main{grid-column:1/-1;border:1px solid var(--border);overflow:hidden;cursor:zoom-in;position:relative}
-.g-thumb{border:1px solid var(--border);overflow:hidden;cursor:zoom-in;position:relative}
-.g-main img,.g-thumb img{width:100%;height:100%;object-fit:cover;display:block;
-  transition:transform 0.5s,filter 0.4s;filter:brightness(0.88) saturate(1.15)}
-.g-main:hover img,.g-thumb:hover img{transform:scale(1.04);filter:brightness(1) saturate(1.2)}
-.g-cap{position:absolute;bottom:0;left:0;right:0;padding:10px 14px;
-  font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;
-  color:rgba(232,244,240,0.6);
-  background:linear-gradient(transparent,rgba(2,4,8,0.88));transition:color 0.2s}
-.g-main:hover .g-cap,.g-thumb:hover .g-cap{color:var(--accent)}
-.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:56px}
-.fc{padding:26px;border:1px solid var(--border);background:var(--glass);
-  backdrop-filter:blur(16px);position:relative;overflow:hidden;transition:all 0.3s}
-.fc:hover{border-color:rgba(100,240,200,0.25);background:rgba(8,18,32,0.85)}
-.fc::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(100,240,200,0.13),transparent)}
-.fc-icon{font-size:26px;margin-bottom:14px}
+/* callout overlays */
+.ss-callout{position:absolute;padding:6px 10px;border:1px solid var(--border-b);
+  background:rgba(2,4,8,0.88);backdrop-filter:blur(8px);
+  font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:0.06em;
+  pointer-events:none;white-space:nowrap}
+.ss-callout::before{content:'';position:absolute;width:1px;background:var(--accent);opacity:0.5}
+
+/* BOOT STRIP */
+.boot-strip{margin-top:3px;border:1px solid var(--border);overflow:hidden;position:relative}
+.boot-strip img{width:100%;display:block;filter:brightness(0.85) saturate(1.1);
+  transition:filter 0.4s}
+.boot-strip:hover img{filter:brightness(1) saturate(1.2)}
+.boot-strip .ss-cap{font-size:11px}
+
+/* ── FEATURES ── */
+#features{padding:100px 0;background:rgba(3,8,16,0.6)}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+  margin-top:56px;border:1px solid var(--border)}
+.fc{padding:32px;background:var(--glass);backdrop-filter:blur(16px);
+  position:relative;overflow:hidden;transition:background 0.3s;border:none}
+.fc:hover{background:rgba(8,20,36,0.9)}
+.fc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(100,240,200,0.08),transparent)}
+.fc-icon{font-size:30px;margin-bottom:16px;display:block}
 .fc-title{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:0.1em;
-  text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+  text-transform:uppercase;color:var(--accent);margin-bottom:10px}
 .fc-desc{font-size:13px;color:var(--dim);line-height:1.7}
-.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:44px}
-.chip{font-family:var(--mono);font-size:11px;padding:5px 12px;
-  border:1px solid var(--border);color:var(--dim);letter-spacing:0.05em;
-  transition:all 0.2s;cursor:default}
-.chip:hover,.chip.a{border-color:rgba(100,240,200,0.25);color:var(--accent);background:rgba(100,240,200,0.05)}
-.chip.b{border-color:rgba(68,204,255,0.22);color:var(--accent2);background:rgba(68,204,255,0.04)}
-.chip.new{border-color:rgba(255,184,76,0.3);color:var(--warn);background:rgba(255,184,76,0.05)}
+.fc-link{display:inline-flex;align-items:center;gap:4px;margin-top:12px;
+  font-family:var(--mono);font-size:10px;letter-spacing:0.08em;color:var(--accent2);
+  text-decoration:none;opacity:0.7;transition:opacity 0.2s}
+.fc-link:hover{opacity:1}
+
+/* ── SOURCES GRID ── */
+#sources{padding:100px 0}
+.sources-intro{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;margin-bottom:72px}
+.source-tier-nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:40px}
+.tier-btn{font-family:var(--mono);font-size:10px;padding:6px 14px;
+  border:1px solid var(--border);color:var(--dim);letter-spacing:0.08em;
+  text-transform:uppercase;cursor:pointer;transition:all 0.2s;background:none}
+.tier-btn:hover,.tier-btn.active{border-color:var(--accent);color:var(--accent);
+  background:rgba(100,240,200,0.06)}
+.src-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.src-card{padding:20px;border:1px solid var(--border);background:var(--glass);
+  backdrop-filter:blur(14px);position:relative;overflow:hidden;
+  transition:border-color 0.3s,background 0.3s;text-decoration:none;display:block}
+.src-card:hover{border-color:rgba(100,240,200,0.28);background:rgba(8,20,36,0.9)}
+.src-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:2px;
+  background:var(--src-color,var(--accent));opacity:0.5}
+.src-card.t1{--src-color:#ff6b6b}
+.src-card.t2{--src-color:var(--warn)}
+.src-card.t3{--src-color:var(--green)}
+.src-card.t4{--src-color:var(--purple)}
+.src-card.t5{--src-color:var(--accent2)}
+.src-icon{font-size:22px;margin-bottom:8px;display:block}
+.src-name{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:0.07em;
+  color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.src-cat{font-family:var(--mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--src-color,var(--accent));margin-bottom:6px}
+.src-desc{font-size:11px;color:var(--dim);line-height:1.55}
+.src-url{display:block;margin-top:8px;font-family:var(--mono);font-size:9px;
+  color:var(--dim);letter-spacing:0.04em;opacity:0.6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src-card:hover .src-url{color:var(--accent);opacity:1}
 
 /* ── ARCHITECTURE ── */
-#arch{padding:110px 0;background:rgba(3,8,15,0.7)}
-.arch-flow{margin-top:68px;display:flex;flex-direction:column;gap:0}
-.af-connector{width:1px;height:28px;background:linear-gradient(to bottom,rgba(100,240,200,0.5),rgba(100,240,200,0.1));
-  margin:0 auto;position:relative}
-.af-connector::after{content:'▼';position:absolute;bottom:-12px;left:50%;
-  transform:translateX(-50%);font-size:9px;color:rgba(100,240,200,0.5)}
-.tier{display:grid;grid-template-columns:130px 1fr;border:1px solid var(--border);
-  background:var(--glass);backdrop-filter:blur(16px);
-  position:relative;overflow:hidden;transition:border-color 0.3s}
-.tier:hover{border-color:rgba(100,240,200,0.22)}
-.tier::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+#arch{padding:100px 0;background:rgba(3,8,16,0.7)}
+.arch-cols{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start;margin-top:60px}
+.arch-pipeline{display:flex;flex-direction:column;gap:0}
+.ap-tier{display:grid;grid-template-columns:100px 1fr;border:1px solid var(--border);
+  background:var(--glass);backdrop-filter:blur(14px);
+  transition:border-color 0.3s;position:relative;overflow:hidden}
+.ap-tier:hover{border-color:rgba(100,240,200,0.22)}
+.ap-tier::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
   background:linear-gradient(90deg,transparent,rgba(100,240,200,0.1),transparent)}
-.tier-lbl{padding:22px 16px;display:flex;flex-direction:column;justify-content:center;
-  align-items:center;text-align:center;border-right:1px solid var(--border);
-  background:rgba(100,240,200,0.025)}
-.tier-n{font-family:var(--mono);font-size:9px;letter-spacing:0.14em;
-  text-transform:uppercase;color:var(--dim);margin-bottom:5px}
-.tier-nm{font-family:var(--mono);font-size:11px;font-weight:700;
-  letter-spacing:0.1em;text-transform:uppercase}
-.t1{color:#ff6b6b}.t2{color:var(--warn)}.t3{color:var(--green)}
-.t4{color:var(--purple)}.t5{color:var(--accent2)}
-.tier-body{padding:18px 24px}
-.src-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-.src{font-family:var(--mono);font-size:9px;padding:3px 8px;
-  border:1px solid rgba(255,255,255,0.07);color:var(--dim);
-  background:rgba(255,255,255,0.015);letter-spacing:0.03em}
-.src.new{border-color:rgba(255,184,76,0.2);color:rgba(255,184,76,0.7)}
-.tier-desc{font-size:12px;color:var(--dim);line-height:1.6;margin-top:6px}
+.ap-lbl{padding:20px 14px;display:flex;flex-direction:column;justify-content:center;
+  align-items:center;text-align:center;border-right:1px solid var(--border)}
+.ap-n{font-family:var(--mono);font-size:8px;letter-spacing:0.14em;
+  text-transform:uppercase;color:var(--dim);margin-bottom:4px}
+.ap-nm{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase}
+.t1c{color:#ff6b6b}.t2c{color:var(--warn)}.t3c{color:var(--green)}.t4c{color:var(--purple)}.t5c{color:var(--accent2)}
+.ap-body{padding:14px 18px}
+.ap-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px}
+.ap-tag{font-family:var(--mono);font-size:9px;padding:2px 7px;
+  border:1px solid rgba(255,255,255,0.07);color:var(--dim)}
+.ap-tag.new-src{border-color:rgba(255,184,76,0.25);color:rgba(255,184,76,0.7)}
+.ap-desc{font-size:11px;color:var(--dim);line-height:1.5}
+.ap-conn{width:1px;height:24px;background:linear-gradient(to bottom,rgba(100,240,200,0.4),transparent);
+  margin:0 auto;position:relative}
+.ap-conn::after{content:'▾';position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);
+  font-size:9px;color:rgba(100,240,200,0.4)}
 
-/* ── INTELLIGENCE DEPTH ── */
-#depth{padding:110px 0}
-.depth-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:68px}
-.dc{padding:32px;border:1px solid var(--border);background:var(--glass);
+/* ARCH right column — data flow */
+.arch-right{display:flex;flex-direction:column;gap:20px}
+.flow-step{padding:24px;border:1px solid var(--border);background:var(--glass);
+  backdrop-filter:blur(14px);position:relative}
+.flow-step::before{content:'';position:absolute;top:0;left:0;bottom:0;width:2px;
+  background:var(--fs-c,var(--accent));opacity:0.4}
+.flow-num{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--fs-c,var(--accent));
+  opacity:0.25;position:absolute;top:16px;right:18px;line-height:1}
+.flow-title{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--text);margin-bottom:6px}
+.flow-desc{font-size:12px;color:var(--dim);line-height:1.6}
+
+/* ── DEPTH ── */
+#depth{padding:100px 0}
+.depth-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:64px}
+.dc{padding:30px;border:1px solid var(--border);background:var(--glass);
   backdrop-filter:blur(16px);position:relative;overflow:hidden}
 .dc::before{content:'';position:absolute;top:0;left:0;bottom:0;width:2px;
-  background:var(--dc-accent,var(--accent));opacity:0.35}
+  background:var(--dc-c,var(--accent));opacity:0.4}
 .dc.wide{grid-column:1/-1}
-.dc.blue{--dc-accent:var(--accent2)}
-.dc.purple{--dc-accent:var(--purple)}
-.dc.warn{--dc-accent:var(--warn)}
-.dc-head{display:flex;gap:14px;align-items:flex-start;margin-bottom:18px}
-.dc-ico{width:42px;height:42px;border:1px solid rgba(100,240,200,0.18);
-  display:flex;align-items:center;justify-content:center;font-size:19px;
-  flex-shrink:0;background:rgba(100,240,200,0.04)}
-.dc-t{font-family:var(--mono);font-size:13px;font-weight:700;
-  letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:3px}
-.dc.blue .dc-t{color:var(--accent2)}
-.dc.purple .dc-t{color:var(--purple)}
-.dc.warn .dc-t{color:var(--warn)}
+.dc.blue{--dc-c:var(--accent2)}.dc.warn{--dc-c:var(--warn)}.dc.purple{--dc-c:var(--purple)}
+.dc-head{display:flex;gap:12px;align-items:flex-start;margin-bottom:16px}
+.dc-ico{width:40px;height:40px;border:1px solid rgba(100,240,200,0.15);
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  flex-shrink:0;background:rgba(100,240,200,0.03)}
+.dc-t{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--dc-c,var(--accent));margin-bottom:3px}
 .dc-s{font-size:11px;color:var(--dim)}
 .dc-body{font-size:13px;color:var(--dim);line-height:1.8}
 .dc-body strong{color:var(--text);font-weight:600}
-.code-block{margin-top:14px;padding:14px;background:rgba(0,0,0,0.45);
+.code-block{margin-top:14px;padding:16px;background:rgba(0,0,0,0.5);
   border:1px solid rgba(255,255,255,0.05);font-family:var(--mono);
   font-size:11px;color:#9ad0c0;line-height:1.9;overflow-x:auto;white-space:pre}
 .kw{color:var(--accent2)}.str{color:var(--warn)}.cm{color:var(--dim);font-style:italic}
 
-/* ALERT TIERS */
-.at-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-.at{padding:9px 16px;font-family:var(--mono);font-size:11px;font-weight:700;
-  letter-spacing:0.12em;text-transform:uppercase;border:1px solid;
-  display:flex;align-items:center;gap:7px}
-.at-d{width:7px;height:7px;border-radius:50%;animation:blink 1.5s infinite}
-.at.flash{border-color:rgba(255,95,99,0.4);color:#ffd8d9;background:rgba(255,95,99,0.07)}
-.at.flash .at-d{background:var(--danger);box-shadow:0 0 7px var(--danger)}
-.at.prio{border-color:rgba(255,184,76,0.35);color:#fff0d0;background:rgba(255,184,76,0.06)}
-.at.prio .at-d{background:var(--warn);box-shadow:0 0 7px var(--warn)}
-.at.rtn{border-color:rgba(100,240,200,0.22);color:#d0f5ed;background:rgba(100,240,200,0.04)}
-.at.rtn .at-d{background:var(--accent);box-shadow:0 0 7px var(--accent)}
+/* alert tiers */
+.at-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.at{padding:8px 14px;font-family:var(--mono);font-size:11px;font-weight:700;
+  letter-spacing:0.1em;text-transform:uppercase;border:1px solid;
+  display:flex;align-items:center;gap:6px}
+.at-d{width:6px;height:6px;border-radius:50%;animation:blink 1.5s infinite}
+.at.fl{border-color:rgba(255,95,99,0.4);color:#ffd8d9;background:rgba(255,95,99,0.07)}
+.at.fl .at-d{background:var(--danger);box-shadow:0 0 7px var(--danger)}
+.at.pr{border-color:rgba(255,184,76,0.35);color:#fff0d0;background:rgba(255,184,76,0.06)}
+.at.pr .at-d{background:var(--warn);box-shadow:0 0 7px var(--warn)}
+.at.rt{border-color:rgba(100,240,200,0.22);color:#d0f5ed;background:rgba(100,240,200,0.04)}
+.at.rt .at-d{background:var(--accent);box-shadow:0 0 7px var(--accent)}
 
-/* PROVIDER PILLS */
-.prov-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:14px}
-.prov{padding:10px;border:1px solid var(--border);background:rgba(255,255,255,0.018);
+/* provider grid */
+.pv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:8px;margin-top:14px}
+.pv{padding:10px 8px;border:1px solid var(--border);background:rgba(255,255,255,0.015);
   text-align:center;font-family:var(--mono);font-size:10px;color:var(--dim);
-  letter-spacing:0.06em;transition:all 0.2s}
-.prov:hover{border-color:rgba(100,240,200,0.22);color:var(--accent);background:rgba(100,240,200,0.04)}
-.prov em{font-style:normal;font-size:17px;display:block;margin-bottom:5px}
-
-/* MEM FLOW */
-.mem-flow{display:flex;align-items:stretch;gap:10px;margin-top:14px;flex-wrap:wrap}
-.mn{flex:1;min-width:90px;padding:12px 14px;border:1px solid var(--border);
+  letter-spacing:0.05em;transition:all 0.2s;text-decoration:none;display:block}
+.pv:hover{border-color:rgba(100,240,200,0.22);color:var(--accent);background:rgba(100,240,200,0.04)}
+.pv em{font-style:normal;font-size:16px;display:block;margin-bottom:4px}
+.mem-row{display:flex;align-items:stretch;gap:8px;margin-top:14px;flex-wrap:wrap}
+.mn{flex:1;min-width:85px;padding:10px 12px;border:1px solid var(--border);
   font-family:var(--mono);font-size:10px;color:var(--dim);text-align:center;
-  background:rgba(255,255,255,0.018)}
-.mn span{font-size:18px;font-weight:700;color:var(--accent);display:block;margin-bottom:4px}
-.ma{font-family:var(--mono);color:rgba(100,240,200,0.35);font-size:18px;
-  display:flex;align-items:center}
+  background:rgba(255,255,255,0.015)}
+.mn span{font-size:16px;font-weight:700;color:var(--accent);display:block;margin-bottom:3px}
+.ma{display:flex;align-items:center;font-family:var(--mono);color:rgba(100,240,200,0.3);font-size:16px}
 
-/* NEW FEATURE BADGES */
-.new-badge{display:inline-block;font-family:var(--mono);font-size:9px;
-  padding:2px 7px;border:1px solid rgba(255,184,76,0.3);
-  color:var(--warn);letter-spacing:0.08em;margin-left:8px;
-  vertical-align:middle;background:rgba(255,184,76,0.06)}
-
-/* ── THEATER INTEL SECTION ── */
-#theater{padding:110px 0;background:rgba(3,8,16,0.6)}
-.theater-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:64px}
-.th-card{padding:28px;border:1px solid var(--border);background:var(--glass);
+/* ── THEATER ── */
+#theater{padding:100px 0;background:rgba(3,8,16,0.6)}
+.theater-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:60px}
+.th{padding:26px;border:1px solid var(--border);background:var(--glass);
   backdrop-filter:blur(16px);position:relative;overflow:hidden;transition:all 0.3s}
-.th-card:hover{border-color:rgba(100,240,200,0.22);background:rgba(8,18,32,0.85)}
-.th-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+.th:hover{border-color:rgba(100,240,200,0.22);background:rgba(8,20,36,0.9)}
+.th::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
   background:linear-gradient(90deg,transparent,rgba(100,240,200,0.12),transparent)}
-.th-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.th-region{font-family:var(--mono);font-size:11px;font-weight:700;
-  letter-spacing:0.1em;text-transform:uppercase;color:var(--accent)}
-.th-body{font-size:13px;color:var(--dim);line-height:1.75}
-.th-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
-.th-tag{font-family:var(--mono);font-size:10px;padding:3px 8px;
-  border:1px solid rgba(255,255,255,0.08);color:var(--dim);letter-spacing:0.04em}
-.theater-wide{grid-column:1/-1;padding:28px;border:1px solid var(--border);
-  background:var(--glass);backdrop-filter:blur(16px)}
+.th-hd{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.th-flag{font-size:20px}
+.th-region{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--accent)}
+.th-body{font-size:13px;color:var(--dim);line-height:1.7}
+.th-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.th-tag{font-family:var(--mono);font-size:9px;padding:2px 7px;
+  border:1px solid rgba(255,255,255,0.07);color:var(--dim)}
 
-/* ── ARSENAL ── */
-#arsenal{padding:110px 0}
-.skill-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:14px;margin-top:60px}
-.sk{padding:22px 18px;border:1px solid var(--border);background:var(--glass);
-  backdrop-filter:blur(12px);display:flex;flex-direction:column;gap:10px;
-  position:relative;overflow:hidden;transition:all 0.3s}
-.sk:hover{border-color:rgba(100,240,200,0.25);background:rgba(8,20,34,0.88);transform:translateY(-2px)}
-.sk::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,var(--accent),var(--accent2));
-  transform:scaleX(0);transform-origin:left;transition:transform 0.4s}
-.sk:hover::after{transform:scaleX(1)}
-.sk-icon{font-size:24px}
-.sk-name{font-family:var(--mono);font-size:11px;font-weight:700;
-  letter-spacing:0.08em;text-transform:uppercase;color:var(--text)}
-.sk-desc{font-size:11px;color:var(--dim);line-height:1.6}
-.sk-bar{height:2px;background:rgba(255,255,255,0.07);margin-top:auto}
-.sk-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0;transition:width 1.6s ease}
+/* narrative callout */
+.narrative-callout{grid-column:1/-1;padding:28px;border:1px solid rgba(100,240,200,0.15);
+  background:rgba(100,240,200,0.03);backdrop-filter:blur(14px);position:relative}
+.narrative-callout::before{content:'"';position:absolute;top:-10px;left:20px;
+  font-size:80px;color:rgba(100,240,200,0.08);font-family:Georgia,serif;line-height:1}
+.nc-label{font-family:var(--mono);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.nc-label .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);
+  box-shadow:0 0 6px var(--accent);animation:blink 1.5s infinite}
+.nc-body{font-size:14px;color:var(--dim);line-height:1.8}
+.nc-body strong{color:var(--text)}
 
 /* ── DEPLOYMENTS ── */
-#deploys{padding:90px 0;background:rgba(3,8,16,0.6)}
-.deploy-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:56px}
+#deploys{padding:100px 0}
+.dep-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:56px}
 .dep{padding:24px;border:1px solid var(--border);background:var(--glass);
   backdrop-filter:blur(14px);position:relative;overflow:hidden;transition:all 0.3s}
-.dep:hover{border-color:rgba(100,240,200,0.22)}
+.dep:hover{border-color:rgba(100,240,200,0.2)}
 .dep::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:var(--dep-c,var(--accent));opacity:0.45}
+  background:var(--dep-c,var(--accent));opacity:0.5}
 .dep-status{display:flex;align-items:center;gap:6px;margin-bottom:12px}
 .dep-dot{width:7px;height:7px;border-radius:50%;background:var(--green);
   box-shadow:0 0 6px var(--green);animation:blink 2s infinite}
-.dep-ok{font-family:var(--mono);font-size:9px;letter-spacing:0.1em;
-  text-transform:uppercase;color:var(--green)}
-.dep-name{font-family:var(--mono);font-size:14px;font-weight:700;
-  letter-spacing:0.08em;color:var(--text);margin-bottom:6px}
+.dep-ok{font-family:var(--mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--green)}
+.dep-name{font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:0.07em;color:var(--text);margin-bottom:6px}
 .dep-desc{font-size:12px;color:var(--dim);line-height:1.6}
-.dep-meta{font-family:var(--mono);font-size:10px;color:var(--dim);
-  margin-top:10px;letter-spacing:0.04em}
+.dep-meta{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:10px;letter-spacing:0.04em}
 
 /* ── DEMO ── */
-#demo{padding:110px 0}
-.browser-wrap{border:1px solid var(--border);overflow:hidden;margin-top:56px}
-.browser-bar{padding:10px 16px;background:rgba(6,14,22,0.97);
-  border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+#demo{padding:100px 0;background:rgba(3,8,16,0.6)}
+.browser{border:1px solid var(--border);overflow:hidden;margin-top:52px}
+.browser-bar{padding:10px 16px;background:rgba(6,14,22,0.98);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px}
 .b-dot{width:11px;height:11px;border-radius:50%}
 .b-dot.r{background:#ff5f57}.b-dot.y{background:#febc2e}.b-dot.g{background:#28c840}
-.b-url{font-family:var(--mono);font-size:11px;color:var(--dim);
-  flex:1;text-align:center;letter-spacing:0.04em}
+.b-url{font-family:var(--mono);font-size:11px;color:var(--dim);flex:1;text-align:center}
 .b-url span{color:var(--accent)}
 .iframe-wrap{position:relative;padding-bottom:56.25%;height:0;overflow:hidden}
 .iframe-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:none}
-.iframe-wrap .fallback{position:absolute;inset:0;display:none;
+.iframe-fallback{position:absolute;inset:0;display:none;
   background:url('../docs/dashboard.png') center/cover no-repeat}
-.iframe-wrap .fallback-msg{position:absolute;inset:0;display:flex;
-  flex-direction:column;align-items:center;justify-content:center;gap:12px;
-  background:rgba(2,4,8,0.78);backdrop-filter:blur(6px)}
-.demo-btns{display:flex;gap:14px;margin-top:24px;flex-wrap:wrap}
+.iframe-fallback .fm{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:12px;background:rgba(2,4,8,0.75);backdrop-filter:blur(6px)}
+.demo-actions{display:flex;gap:12px;margin-top:22px;flex-wrap:wrap}
 
 /* ── GITHUB ── */
-#github{padding:90px 0}
-.gh-wrap{max-width:680px;margin:56px auto 0}
-.gh-card{padding:40px;text-align:center;border:1px solid var(--border);
-  background:var(--glass);backdrop-filter:blur(20px);position:relative;overflow:hidden}
+#github{padding:100px 0}
+.gh-card{max-width:700px;margin:56px auto 0;padding:44px;border:1px solid var(--border);
+  background:var(--glass);backdrop-filter:blur(20px);position:relative;overflow:hidden;text-align:center}
 .gh-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
   background:linear-gradient(90deg,transparent,var(--accent),transparent)}
-.gh-ico{font-size:48px;margin-bottom:16px}
-.gh-title{font-family:var(--mono);font-size:20px;font-weight:700;
-  letter-spacing:0.08em;color:var(--accent);margin-bottom:4px}
+.gh-ico{font-size:52px;margin-bottom:16px}
+.gh-name{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--accent);margin-bottom:4px;letter-spacing:0.06em}
 .gh-handle{font-family:var(--mono);font-size:12px;color:var(--dim);margin-bottom:18px}
 .gh-desc{font-size:14px;color:var(--dim);line-height:1.75;margin-bottom:26px}
 .gh-nums{display:flex;justify-content:center;gap:40px;margin-bottom:28px}
-.gn .v{font-family:var(--mono);font-size:30px;font-weight:700;color:var(--accent);display:block}
+.gn .v{font-family:var(--mono);font-size:32px;font-weight:700;color:var(--accent);display:block}
 .gn .l{font-size:11px;color:var(--dim);letter-spacing:0.07em}
 .gh-tags{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-bottom:28px}
 .gh-tag{font-family:var(--mono);font-size:9px;padding:3px 9px;
-  border:1px solid rgba(68,204,255,0.18);color:var(--accent2);
-  background:rgba(68,204,255,0.03)}
-.gh-btns{display:flex;gap:12px;justify-content:center}
+  border:1px solid rgba(68,204,255,0.18);color:var(--accent2);background:rgba(68,204,255,0.03)}
+.gh-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 
 /* ── FOOTER ── */
 footer{padding:56px 0 36px;border-top:1px solid var(--border)}
-.foot-inner{display:flex;align-items:flex-start;justify-content:space-between;
-  flex-wrap:wrap;gap:28px;margin-bottom:28px}
-.foot-brand{font-family:var(--mono);font-size:18px;font-weight:700;
-  letter-spacing:0.16em;color:var(--accent)}
-.foot-brand small{display:block;font-size:10px;color:var(--dim);
-  letter-spacing:0.08em;font-weight:300;margin-top:5px;max-width:220px;line-height:1.5}
-.foot-links{display:flex;gap:6px;flex-direction:column}
-.foot-links a{font-family:var(--mono);font-size:11px;letter-spacing:0.08em;
-  text-transform:uppercase;color:var(--dim);text-decoration:none;transition:color 0.2s}
+.foot-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px;margin-bottom:36px}
+.foot-brand{font-family:var(--mono);font-size:17px;font-weight:700;letter-spacing:0.16em;color:var(--accent)}
+.foot-brand small{display:block;font-size:10px;color:var(--dim);font-weight:300;
+  letter-spacing:0.07em;margin-top:6px;line-height:1.7;max-width:200px}
+.foot-title{font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:14px}
+.foot-links{list-style:none;display:flex;flex-direction:column;gap:8px}
+.foot-links a{font-family:var(--mono);font-size:11px;letter-spacing:0.06em;
+  color:var(--dim);text-decoration:none;transition:color 0.2s}
 .foot-links a:hover{color:var(--accent)}
 .foot-copy{font-family:var(--mono);font-size:10px;color:var(--dim);
-  letter-spacing:0.06em;text-align:center;border-top:1px solid var(--border);
-  padding-top:22px}
+  letter-spacing:0.06em;text-align:center;border-top:1px solid var(--border);padding-top:22px}
 .foot-copy a{color:var(--dim);text-decoration:none}.foot-copy a:hover{color:var(--accent)}
 
 /* ── LIGHTBOX ── */
 #lb{position:fixed;inset:0;z-index:200;background:rgba(2,4,8,0.97);
   display:flex;align-items:center;justify-content:center;
-  opacity:0;pointer-events:none;transition:opacity 0.3s;padding:20px}
+  opacity:0;pointer-events:none;transition:opacity 0.25s;padding:20px}
 #lb.open{opacity:1;pointer-events:all}
 #lb img{max-width:100%;max-height:90vh;object-fit:contain;border:1px solid var(--border)}
-#lb-close{position:absolute;top:18px;right:24px;font-size:24px;
-  color:var(--dim);cursor:pointer;background:none;border:none;
-  font-family:var(--mono);transition:color 0.2s}
+#lb-close{position:absolute;top:18px;right:24px;font-size:22px;
+  color:var(--dim);cursor:pointer;background:none;border:none;font-family:var(--mono);transition:color 0.2s}
 #lb-close:hover{color:var(--accent)}
 
-/* ── RESPONSIVE ── */
+/* RESPONSIVE */
 @media(max-width:960px){
-  .depth-grid,.theater-grid,.gallery{grid-template-columns:1fr}
-  .dc.wide,.theater-wide{grid-column:auto}
-  .g-main{grid-column:auto}
-  .feat-grid{grid-template-columns:1fr 1fr}
-  nav{padding:12px 20px}
-  .nav-links{display:none}
+  .ss-grid,.arch-cols,.depth-grid,.theater-grid,.sources-intro,.foot-grid{grid-template-columns:1fr}
+  .dc.wide,.narrative-callout{grid-column:auto}
+  .ss-main{grid-column:auto}
+  nav{padding:12px 18px}.nav-links{display:none}
   .container{padding:0 18px}
+  h1{font-size:clamp(40px,10vw,64px)}
 }
-@media(max-width:600px){
-  .feat-grid{grid-template-columns:1fr}
-  .eco-card{max-width:100%}
-  .skill-grid{grid-template-columns:1fr 1fr}
-  .deploy-grid{grid-template-columns:1fr}
+@media(max-width:620px){
+  .feat-grid{grid-template-columns:1fr}.hero-stats .hs:nth-child(n+4){display:none}
+  .gh-nums{gap:20px}
 }
 </style>
 </head>
@@ -429,376 +420,380 @@ footer{padding:56px 0 36px;border-top:1px solid var(--border)}
 
 <!-- NAV -->
 <nav>
-  <a href="#hero" class="nav-logo">DDN<sup>intelligence</sup></a>
+  <a href="#hero" class="nav-logo">DDN <span class="badge">LIVE</span></a>
   <ul class="nav-links">
-    <li><a href="#ecosystem">Ecosystem</a></li>
-    <li><a href="#showcase">Dashboard</a></li>
+    <li><a href="#screenshots">Dashboard</a></li>
+    <li><a href="#sources">Sources</a></li>
     <li><a href="#arch">Architecture</a></li>
     <li><a href="#theater">Theater Intel</a></li>
     <li><a href="#depth">Data Science</a></li>
   </ul>
-  <div class="nav-right">
-    <div class="pill-live"><div class="dot"></div>LIVE</div>
-    <a href="https://www.crucix.live" target="_blank" rel="noopener" class="btn-nav">Open Terminal</a>
-  </div>
+  <a href="https://www.crucix.live" target="_blank" rel="noopener" class="nav-cta">Open Terminal ↗</a>
 </nav>
 
-<!-- ════════════════ HERO ════════════════ -->
+<!-- ════════════════════════════ HERO ════════════════════════════ -->
 <section id="hero">
-  <canvas id="hero-canvas"></canvas>
+  <div class="hero-bg">
+    <img src="../docs/dashboard.png" alt="DDN Dashboard" aria-hidden="true">
+  </div>
+  <div class="hero-glow"></div>
   <div class="hero-inner">
     <div class="hero-kicker">Data-Driven Intelligence Network</div>
-    <h1 class="hero-title">
-      Signal<br>
-      <span class="hi">Intelligence</span><br>
-      at Scale
-    </h1>
-    <p class="hero-type"><span id="tw"></span><span class="cur"></span></p>
-    <div class="hero-ctas">
-      <a href="https://www.crucix.live" target="_blank" rel="noopener" class="btn-primary">Open Live Terminal</a>
-      <a href="https://github.com/stevenmcdermott-sys/crucix" target="_blank" rel="noopener" class="btn-outline">View on GitHub</a>
+    <h1>Signal<br><span class="hi">Intelligence</span></h1>
+    <p class="hero-sub"><span id="tw"></span><span class="cur"></span></p>
+    <div class="hero-btns">
+      <a href="https://www.crucix.live" target="_blank" rel="noopener" class="btn-p">Open Live Terminal ↗</a>
+      <a href="https://github.com/stevenmcdermott-sys/crucix" target="_blank" rel="noopener" class="btn-g">GitHub →</a>
+      <a href="#sources" class="btn-g">30 Sources →</a>
     </div>
   </div>
-  <div class="hero-scroll"><span>Explore</span><div class="scroll-bar"></div></div>
-</section>
-
-<!-- ════════════════ ECOSYSTEM ════════════════ -->
-<section id="ecosystem">
-  <div class="container">
-    <div class="sec-label reveal">The DDN Ecosystem</div>
-    <h2 class="sec-title reveal">Four deployed services.<br>One coherent intelligence platform.</h2>
-    <div class="eco-row" style="margin-top:48px">
-      <div class="eco-card reveal">
-        <div class="eco-icon">⚡</div>
-        <div class="eco-name">DDN Terminal</div>
-        <div class="eco-desc">The core intelligence engine. 30 live sources, WebGL globe, Theater Intel pages, IO narrative detection.</div>
-        <span class="eco-tag">crucix.live · LIVE</span>
-      </div>
-      <div class="eco-card blue reveal">
-        <div class="eco-icon">📈</div>
-        <div class="eco-name">DDN Quant Lab</div>
-        <div class="eco-desc">LLM-powered quantitative analysis. Trade idea generation grounded in real cross-domain signal data.</div>
-        <span class="eco-tag">ddn-quant-lab · Railway</span>
-      </div>
-      <div class="eco-card purple reveal">
-        <div class="eco-icon">🗄️</div>
-        <div class="eco-name">DDN Signal Store</div>
-        <div class="eco-desc">Persistent signal archive. Historical sweep storage and pattern-matching across cold memory archives.</div>
-        <span class="eco-tag">ddn-signal-store · Railway</span>
-      </div>
-      <div class="eco-card warn reveal">
-        <div class="eco-icon">🎯</div>
-        <div class="eco-name">OSINT War Room</div>
-        <div class="eco-desc">Dedicated OSINT aggregation and conflict intelligence. ACLED, ReliefWeb, WHO, sanctions data in one view.</div>
-        <span class="eco-tag">osint-war-room · Railway</span>
-      </div>
-    </div>
+  <div class="hero-stats">
+    <div class="hs"><span class="n">30</span><span class="l">Live Sources</span></div>
+    <div class="hs"><span class="n">7</span><span class="l">LLM Providers</span></div>
+    <div class="hs"><span class="n">15m</span><span class="l">Sweep Cycle</span></div>
+    <div class="hs"><span class="n">600+</span><span class="l">SDR Receivers</span></div>
+    <div class="hs"><span class="n">4</span><span class="l">Deployments</span></div>
   </div>
 </section>
 
-<!-- ════════════════ STATS ════════════════ -->
-<div id="stats" style="border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:rgba(4,10,18,0.55)">
-  <div class="container">
-    <div class="stats-row">
-      <div class="stat reveal"><span class="stat-n" data-t="30">0</span><div class="stat-l">Live Sources</div></div>
-      <div class="stat reveal"><span class="stat-n" data-t="7">0</span><div class="stat-l">LLM Providers</div></div>
-      <div class="stat reveal"><span class="stat-n" data-t="15" data-s="min">0</span><div class="stat-l">Sweep Cycle</div></div>
-      <div class="stat reveal"><span class="stat-n" data-t="600" data-s="+">0</span><div class="stat-l">SDR Receivers</div></div>
-      <div class="stat reveal"><span class="stat-n" data-t="4">0</span><div class="stat-l">Live Deployments</div></div>
-    </div>
-  </div>
+<!-- ════════════════════════════ SOURCE TICKER ════════════════════════════ -->
+<div id="ticker">
+  <div class="ticker-track" id="ticker-track"></div>
 </div>
 
-<!-- ════════════════ SHOWCASE ════════════════ -->
-<section id="showcase">
+<!-- ════════════════════════════ SCREENSHOTS ════════════════════════════ -->
+<section id="screenshots">
   <div class="container">
     <div class="sec-label reveal">The Dashboard</div>
-    <h2 class="sec-title reveal">A Jarvis-style intelligence terminal.<br>Real-time. Self-hosted. Zero cloud.</h2>
-    <p class="sec-sub reveal">WebGL 3D globe, D3.js flat map, 9 marker types, Theatre Intel pages per region, IO narrative panels, and SSE-pushed live data — from a single Node.js process with one npm dependency.</p>
+    <h2 class="sec-title reveal">A Jarvis-style intelligence terminal.<br>WebGL globe. D3 map. Live SSE data.</h2>
+    <p class="sec-sub reveal">Single Node.js process, one npm dependency (Express). Everything else is native or CDN-loaded. Runs on Railway, Docker, or <code style="color:var(--accent);font-family:var(--mono);font-size:13px">node server.mjs</code>.</p>
 
-    <div class="gallery">
-      <div class="g-main reveal" onclick="lb('../docs/dashboard.png')">
-        <img src="../docs/dashboard.png" alt="DDN full intelligence dashboard" loading="lazy">
-        <div class="g-cap" style="font-size:12px;padding:14px">Full Intelligence Dashboard — live panels, Theater Intel, IO Narratives, 3-column HUD</div>
+    <div class="ss-grid reveal">
+      <div class="ss-main" onclick="openLb('../docs/dashboard.png')">
+        <img src="../docs/dashboard.png" alt="DDN full dashboard — WebGL globe, 9 panel types, live data">
+        <div class="ss-cap">Full Intelligence HUD — 3-column layout, live SSE data, 9 marker types, Theater Intel, IO Narratives</div>
       </div>
-      <div class="g-thumb reveal" onclick="lb('../docs/globe.png')">
-        <img src="../docs/globe.png" alt="3D WebGL globe" loading="lazy" style="height:270px">
-        <div class="g-cap">3D WebGL Globe — Three.js + Globe.gl</div>
+      <div class="ss-thumb" onclick="openLb('../docs/globe.png')">
+        <img src="../docs/globe.png" alt="3D WebGL globe with atmosphere glow and flight arcs">
+        <div class="ss-cap">WebGL 3D Globe — Three.js + Globe.gl · Atmosphere glow · Animated flight arcs · Click-through to region brief</div>
       </div>
-      <div class="g-thumb reveal" onclick="lb('../docs/map.png')">
-        <img src="../docs/map.png" alt="D3 flat map" loading="lazy" style="height:270px">
-        <div class="g-cap">D3.js Flat Map — 9 marker types, flight arcs</div>
+      <div class="ss-thumb" onclick="openLb('../docs/map.png')">
+        <img src="../docs/map.png" alt="D3.js flat map with markers and flight corridors">
+        <div class="ss-cap">D3.js Flat Map — 9 marker types · Flight corridor arcs · Geo-tagged OSINT pins</div>
       </div>
     </div>
 
-    <div class="feat-grid">
-      <div class="fc reveal">
-        <div class="fc-icon">🌐</div>
-        <div class="fc-title">WebGL 3D Globe</div>
-        <div class="fc-desc">Three.js + Globe.gl — atmosphere glow, pulsing conflict rings, animated flight corridor arcs, click-through to region brief.</div>
-      </div>
-      <div class="fc reveal">
-        <div class="fc-icon">🎭</div>
-        <div class="fc-title">Theater Intel Pages <span class="new-badge">NEW</span></div>
-        <div class="fc-desc">Dedicated per-region intelligence views: Americas, Europe, MENA, APAC, Africa. Each shows filtered sources, air activity, narratives.</div>
-      </div>
-      <div class="fc reveal">
-        <div class="fc-icon">📰</div>
-        <div class="fc-title">IO Narrative Detection <span class="new-badge">NEW</span></div>
-        <div class="fc-desc">GDELT IO + Telegram IO feeds extract Dominant Narratives via Claude Haiku. Identifies information operations in real-time.</div>
-      </div>
-      <div class="fc reveal">
-        <div class="fc-icon">⚡</div>
-        <div class="fc-title">Delta Engine</div>
-        <div class="fc-desc">Semantic change detection across 30 signals. Numeric thresholds, count deltas, content hashing, cross-run deduplication.</div>
-      </div>
-      <div class="fc reveal">
-        <div class="fc-icon">🧠</div>
-        <div class="fc-title">LLM Trade Ideas</div>
-        <div class="fc-desc">Sweep data compressed to ~8KB and dispatched to your LLM of choice. Returns 5–8 structured trade ideas with confidence and citations.</div>
-      </div>
-      <div class="fc reveal">
-        <div class="fc-icon">🔒</div>
-        <div class="fc-title">CISA KEV Feed <span class="new-badge">NEW</span></div>
-        <div class="fc-desc">CISA Known Exploited Vulnerabilities catalog — zero-API-key required. Tracks actively exploited CVEs as a geopolitical signal layer.</div>
-      </div>
-    </div>
-
-    <div class="chip-row reveal">
-      <span class="chip a">Three.js</span><span class="chip a">Globe.gl</span>
-      <span class="chip a">D3.js v7</span><span class="chip a">GSAP 3.12</span>
-      <span class="chip b">Node.js ESM</span><span class="chip b">Express v5</span>
-      <span class="chip b">SSE</span><span class="chip b">Docker</span>
-      <span class="chip b">Railway</span>
-      <span class="chip">Claude Haiku 4.5</span>
-      <span class="chip">OpenAI</span><span class="chip">Gemini</span>
-      <span class="chip">Mistral</span><span class="chip">OpenRouter</span>
-      <span class="chip new">GDELT IO</span>
-      <span class="chip new">Telegram IO</span>
-      <span class="chip new">CISA KEV</span>
-      <span class="chip new">Metals</span>
+    <div class="boot-strip reveal" onclick="openLb('../docs/boot.png')" style="cursor:zoom-in">
+      <img src="../docs/boot.png" alt="Cinematic boot sequence" style="max-height:180px;object-fit:cover;object-position:center">
+      <div class="ss-cap">Cinematic boot sequence — GSAP animated system initialisation with 30-source health check</div>
     </div>
   </div>
 </section>
 
-<!-- ════════════════ ARCHITECTURE ════════════════ -->
+<!-- ════════════════════════════ FEATURES ════════════════════════════ -->
+<section id="features">
+  <div class="container">
+    <div class="sec-label reveal">Capabilities</div>
+    <h2 class="sec-title reveal">What DDN does.</h2>
+    <div class="feat-grid reveal">
+      <div class="fc">
+        <span class="fc-icon">🌐</span>
+        <div class="fc-title">WebGL 3D Globe</div>
+        <div class="fc-desc">Three.js + Globe.gl — atmosphere glow, star field, pulsing conflict rings, animated flight corridor arcs. Click any marker to open the region brief inline.</div>
+        <a href="https://globe.gl" target="_blank" rel="noopener" class="fc-link">globe.gl ↗</a>
+      </div>
+      <div class="fc">
+        <span class="fc-icon">🎭</span>
+        <div class="fc-title">Theater Intel Pages <span class="new-badge">NEW</span></div>
+        <div class="fc-desc">Dedicated per-region intelligence views — Americas, Europe, MENA, APAC, Africa. Each shows filtered sources, air activity, conflict events, and IO narratives for that theater.</div>
+        <a href="https://www.crucix.live/theater.html" target="_blank" rel="noopener" class="fc-link">See Theater Intel ↗</a>
+      </div>
+      <div class="fc">
+        <span class="fc-icon">📰</span>
+        <div class="fc-title">IO Narrative Detection <span class="new-badge">NEW</span></div>
+        <div class="fc-desc">GDELT IO + Telegram IO feeds extract Dominant Narratives via Claude Haiku 4.5. Clusters semantically similar content across sources to surface coordinated messaging patterns.</div>
+        <a href="https://www.gdeltproject.org" target="_blank" rel="noopener" class="fc-link">GDELT Project ↗</a>
+      </div>
+      <div class="fc">
+        <span class="fc-icon">⚡</span>
+        <div class="fc-title">Delta Engine</div>
+        <div class="fc-desc">Semantic change detection across 30 signals. Configurable numeric thresholds (VIX ±5%, energy prices), count-based gates (±500 thermal detections), content-hash deduplication.</div>
+      </div>
+      <div class="fc">
+        <span class="fc-icon">🧠</span>
+        <div class="fc-title">LLM Trade Ideas</div>
+        <div class="fc-desc">Sweep data compressed to ~8KB and dispatched to your chosen LLM. Returns 5–8 structured LONG/SHORT/HEDGE ideas with ticker, confidence, rationale, multi-source citations, and time horizon.</div>
+      </div>
+      <div class="fc">
+        <span class="fc-icon">📡</span>
+        <div class="fc-title">Telegram + Discord Bots</div>
+        <div class="fc-desc">Two-way intelligence assistant. /brief, /sweep, /status, /mute from your phone. Push alerts at FLASH / PRIORITY / ROUTINE tiers with progressive cooldown decay.</div>
+        <a href="https://discord.gg/ChVy7SF4" target="_blank" rel="noopener" class="fc-link">Join Discord ↗</a>
+      </div>
+      <div class="fc">
+        <span class="fc-icon">🔴</span>
+        <div class="fc-title">SSE Live Push</div>
+        <div class="fc-desc">Server-Sent Events stream every connected dashboard in real-time the instant a sweep completes. No polling, no WebSocket overhead — pure HTTP streaming.</div>
+      </div>
+      <div class="fc">
+        <span class="fc-icon">🔒</span>
+        <div class="fc-title">CISA KEV Feed <span class="new-badge">NEW</span></div>
+        <div class="fc-desc">CISA Known Exploited Vulnerabilities catalog — zero API key. Tracks actively exploited CVEs as a cyber-geopolitical signal layer, mandated for US federal patching.</div>
+        <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog" target="_blank" rel="noopener" class="fc-link">CISA KEV Catalog ↗</a>
+      </div>
+      <div class="fc">
+        <span class="fc-icon">🔬</span>
+        <div class="fc-title">Diagnostics API</div>
+        <div class="fc-desc">/api/diagnostic, /api/sources, /api/debug/fred — full per-source health visibility, error surfaces, and env key presence checks from any browser.</div>
+        <a href="https://www.crucix.live/api/health" target="_blank" rel="noopener" class="fc-link">Live Health ↗</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════ SOURCES ════════════════════════════ -->
+<section id="sources">
+  <div class="container">
+    <div class="sources-intro">
+      <div>
+        <div class="sec-label reveal">Data Sources</div>
+        <h2 class="sec-title reveal">30 live feeds.<br>All public. All cited.</h2>
+        <p class="sec-sub reveal">Every source is a self-contained module with its own authentication, error handling, and graceful degradation. Click any card to visit the source directly.</p>
+      </div>
+      <div class="reveal" style="display:flex;flex-direction:column;gap:12px">
+        <div style="padding:20px;border:1px solid var(--border);background:var(--glass);backdrop-filter:blur(14px)">
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--dim);margin-bottom:10px">Source Breakdown</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:8px;height:8px;border-radius:50%;background:#ff6b6b;box-shadow:0 0 5px #ff6b6b;flex-shrink:0"></div>
+              <span style="font-family:var(--mono);font-size:11px;color:var(--dim);flex:1">Tier 1 — OSINT & Geopolitical</span>
+              <span style="font-family:var(--mono);font-size:12px;color:#ff6b6b;font-weight:700">13</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:8px;height:8px;border-radius:50%;background:var(--warn);box-shadow:0 0 5px var(--warn);flex-shrink:0"></div>
+              <span style="font-family:var(--mono);font-size:11px;color:var(--dim);flex:1">Tier 2 — Economic & Financial</span>
+              <span style="font-family:var(--mono);font-size:12px;color:var(--warn);font-weight:700">7</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 5px var(--green);flex-shrink:0"></div>
+              <span style="font-family:var(--mono);font-size:11px;color:var(--dim);flex:1">Tier 3 — Env / Tech / Social</span>
+              <span style="font-family:var(--mono);font-size:12px;color:var(--green);font-weight:700">8</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:8px;height:8px;border-radius:50%;background:var(--purple);box-shadow:0 0 5px var(--purple);flex-shrink:0"></div>
+              <span style="font-family:var(--mono);font-size:11px;color:var(--dim);flex:1">Tier 4 — Space & Satellites</span>
+              <span style="font-family:var(--mono);font-size:12px;color:var(--purple);font-weight:700">1</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:8px;height:8px;border-radius:50%;background:var(--accent2);box-shadow:0 0 5px var(--accent2);flex-shrink:0"></div>
+              <span style="font-family:var(--mono);font-size:11px;color:var(--dim);flex:1">Tier 5 — Markets</span>
+              <span style="font-family:var(--mono);font-size:12px;color:var(--accent2);font-weight:700">1</span>
+            </div>
+          </div>
+        </div>
+        <div style="padding:16px;border:1px solid rgba(100,240,200,0.15);background:rgba(100,240,200,0.03)">
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:6px">All sources run in parallel</div>
+          <div style="font-size:12px;color:var(--dim);line-height:1.6">Via <code style="color:var(--accent);font-family:var(--mono)">Promise.allSettled()</code> — a failed source degrades gracefully; it never crashes the sweep.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="source-tier-nav reveal" id="tier-nav">
+      <button class="tier-btn active" data-tier="all">All 30</button>
+      <button class="tier-btn" data-tier="t1">Tier 1 — OSINT</button>
+      <button class="tier-btn" data-tier="t2">Tier 2 — Economic</button>
+      <button class="tier-btn" data-tier="t3">Tier 3 — Env/Social</button>
+      <button class="tier-btn" data-tier="t4">Tier 4 — Space</button>
+      <button class="tier-btn" data-tier="t5">Tier 5 — Markets</button>
+    </div>
+
+    <div class="src-grid reveal" id="src-grid"></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════ ARCHITECTURE ════════════════════════════ -->
 <section id="arch">
   <div class="container">
-    <div class="sec-label reveal">System Architecture</div>
-    <h2 class="sec-title reveal">30-source parallel pipeline.<br>Every source isolated, every failure contained.</h2>
-    <p class="sec-sub reveal">All 30 sources are dispatched simultaneously via <code style="color:var(--accent);font-family:var(--mono);font-size:13px">Promise.allSettled()</code>. A missing API key degrades that source; nothing else crashes.</p>
+    <div class="sec-label reveal">Architecture</div>
+    <h2 class="sec-title reveal">How the pipeline works.</h2>
+    <div class="arch-cols">
+      <div class="arch-pipeline reveal">
+        <div class="ap-tier">
+          <div class="ap-lbl"><div class="ap-n">Tier 1</div><div class="ap-nm t1c">OSINT</div></div>
+          <div class="ap-body">
+            <div class="ap-tags">
+              <span class="ap-tag">GDELT</span><span class="ap-tag">OpenSky</span><span class="ap-tag">NASA FIRMS</span>
+              <span class="ap-tag">AIS Maritime</span><span class="ap-tag">Safecast</span><span class="ap-tag">ACLED</span>
+              <span class="ap-tag">WHO</span><span class="ap-tag">OFAC</span><span class="ap-tag">OpenSanctions</span>
+              <span class="ap-tag">ADS-B Exchange</span><span class="ap-tag">ReliefWeb</span>
+              <span class="ap-tag new-src">GDELT IO ★</span><span class="ap-tag new-src">Telegram IO ★</span>
+            </div>
+            <div class="ap-desc">Global news (100+ languages), real-time ADS-B, satellite fire, vessel tracking, radiation, conflict events, sanctions — plus 2 new IO narrative feeds.</div>
+          </div>
+        </div>
+        <div class="ap-conn"></div>
+        <div class="ap-tier">
+          <div class="ap-lbl"><div class="ap-n">Tier 2</div><div class="ap-nm t2c">Economic</div></div>
+          <div class="ap-body">
+            <div class="ap-tags">
+              <span class="ap-tag">FRED (22)</span><span class="ap-tag">US Treasury</span><span class="ap-tag">BLS</span>
+              <span class="ap-tag">EIA Energy</span><span class="ap-tag">NY Fed GSCPI</span>
+              <span class="ap-tag">USAspending</span><span class="ap-tag">UN Comtrade</span>
+            </div>
+            <div class="ap-desc">22 Federal Reserve macro indicators, energy prices, payrolls, supply chain pressure, defense contracts, strategic commodity trade flows.</div>
+          </div>
+        </div>
+        <div class="ap-conn"></div>
+        <div class="ap-tier">
+          <div class="ap-lbl"><div class="ap-n">Tier 3</div><div class="ap-nm t3c">Env/Social</div></div>
+          <div class="ap-body">
+            <div class="ap-tags">
+              <span class="ap-tag">NOAA/NWS</span><span class="ap-tag">EPA RadNet</span><span class="ap-tag">USPTO</span>
+              <span class="ap-tag">Bluesky</span><span class="ap-tag">Reddit</span>
+              <span class="ap-tag">Telegram (17ch)</span><span class="ap-tag">KiwiSDR</span>
+              <span class="ap-tag new-src">CISA KEV ★</span>
+            </div>
+            <div class="ap-desc">Weather, radiation, patents, social sentiment, ~600 HF radio receivers, and the CISA Known Exploited Vulnerabilities catalog.</div>
+          </div>
+        </div>
+        <div class="ap-conn"></div>
+        <div class="ap-tier">
+          <div class="ap-lbl"><div class="ap-n">Tier 4</div><div class="ap-nm t4c">Space</div></div>
+          <div class="ap-body">
+            <div class="ap-tags">
+              <span class="ap-tag">CelesTrak</span><span class="ap-tag">ISS</span>
+              <span class="ap-tag">Military Sats</span><span class="ap-tag">Starlink</span>
+            </div>
+            <div class="ap-desc">Satellite launches, ISS position, GPS/GLONASS/Galileo/BeiDou counts, megaconstellation tracking.</div>
+          </div>
+        </div>
+        <div class="ap-conn"></div>
+        <div class="ap-tier">
+          <div class="ap-lbl"><div class="ap-n">Tier 5</div><div class="ap-nm t5c">Markets</div></div>
+          <div class="ap-body">
+            <div class="ap-tags">
+              <span class="ap-tag">Yahoo Finance</span><span class="ap-tag">SPY/QQQ</span>
+              <span class="ap-tag">BTC/Gold/WTI</span><span class="ap-tag">VIX</span>
+              <span class="ap-tag new-src">Metals ★</span>
+            </div>
+            <div class="ap-desc">Live equities, crypto, energy, volatility, and precious metals — the final cross-validation layer.</div>
+          </div>
+        </div>
+      </div>
 
-    <div class="arch-flow reveal">
-      <div class="tier">
-        <div class="tier-lbl"><div class="tier-n">Tier 1</div><div class="tier-nm t1">OSINT</div></div>
-        <div class="tier-body">
-          <div class="src-tags">
-            <span class="src">GDELT</span><span class="src">OpenSky ADS-B</span>
-            <span class="src">NASA FIRMS</span><span class="src">Maritime AIS</span>
-            <span class="src">Safecast</span><span class="src">ACLED</span>
-            <span class="src">ReliefWeb</span><span class="src">WHO</span>
-            <span class="src">OFAC SDN</span><span class="src">OpenSanctions</span>
-            <span class="src">ADS-B Exchange</span>
-            <span class="src new">GDELT IO ★</span>
-            <span class="src new">Telegram IO ★</span>
-          </div>
-          <div class="tier-desc">Global events (100+ languages), real-time ADS-B across 6 hotspot regions, satellite fire detection, vessel tracking, radiation monitoring, conflict events, sanctions — plus two new IO intelligence feeds for narrative monitoring.</div>
+      <div class="arch-right reveal">
+        <div class="flow-step" style="--fs-c:var(--accent)">
+          <div class="flow-num">1</div>
+          <div class="flow-title">Parallel Sweep</div>
+          <div class="flow-desc">All 30 sources dispatched simultaneously via <code style="color:var(--accent);font-family:var(--mono)">Promise.allSettled()</code>. Completes in ~30s. Failures isolated per-module.</div>
         </div>
-      </div>
-      <div class="af-connector"></div>
-      <div class="tier">
-        <div class="tier-lbl"><div class="tier-n">Tier 2</div><div class="tier-nm t2">Economic</div></div>
-        <div class="tier-body">
-          <div class="src-tags">
-            <span class="src">FRED (22 indicators)</span><span class="src">US Treasury</span>
-            <span class="src">BLS</span><span class="src">EIA Energy</span>
-            <span class="src">NY Fed GSCPI</span><span class="src">USAspending</span>
-            <span class="src">UN Comtrade</span>
-          </div>
-          <div class="tier-desc">22 Federal Reserve macro indicators, WTI/Brent/NatGas, nonfarm payrolls, supply chain pressure index, defense contracts, and strategic commodity trade flows.</div>
+        <div class="flow-step" style="--fs-c:var(--accent2)">
+          <div class="flow-num">2</div>
+          <div class="flow-title">Synthesis</div>
+          <div class="flow-desc">Raw data synthesised into dashboard format by <code style="color:var(--accent2);font-family:var(--mono)">inject.mjs</code> (30KB). Geo-tagging, air activity aggregation, narrative clustering.</div>
         </div>
-      </div>
-      <div class="af-connector"></div>
-      <div class="tier">
-        <div class="tier-lbl"><div class="tier-n">Tier 3</div><div class="tier-nm t3">Env/Tech/Social</div></div>
-        <div class="tier-body">
-          <div class="src-tags">
-            <span class="src">NOAA/NWS</span><span class="src">EPA RadNet</span>
-            <span class="src">USPTO Patents</span><span class="src">Bluesky</span>
-            <span class="src">Reddit</span><span class="src">Telegram (17ch)</span>
-            <span class="src">KiwiSDR (~600)</span>
-            <span class="src new">CISA KEV ★</span>
-          </div>
-          <div class="tier-desc">Weather alerts, radiation monitoring, patent filings in 7 strategic tech sectors, social sentiment, OSINT Telegram channels, ~600 global HF radio receivers, and CISA Known Exploited Vulnerabilities as a cyber-geopolitical signal.</div>
+        <div class="flow-step" style="--fs-c:var(--warn)">
+          <div class="flow-num">3</div>
+          <div class="flow-title">Delta Computation</div>
+          <div class="flow-desc">Delta engine compares against hot memory (last 3 runs). Numeric thresholds, semantic dedup, risk direction score, confidence weighting.</div>
         </div>
-      </div>
-      <div class="af-connector"></div>
-      <div class="tier">
-        <div class="tier-lbl"><div class="tier-n">Tier 4</div><div class="tier-nm t4">Space</div></div>
-        <div class="tier-body">
-          <div class="src-tags">
-            <span class="src">CelesTrak</span><span class="src">ISS</span>
-            <span class="src">Military Constellations</span><span class="src">Starlink/OneWeb</span>
-          </div>
-          <div class="tier-desc">Satellite launches, ISS position, GPS/GLONASS/Galileo/BeiDou counts, and megaconstellation tracking via CelesTrak TLE feeds.</div>
+        <div class="flow-step" style="--fs-c:var(--purple)">
+          <div class="flow-num">4</div>
+          <div class="flow-title">LLM Analysis</div>
+          <div class="flow-desc">Data compressed to ~8KB and dispatched to configured provider. Trade ideas generated with multi-source citations. IO narratives extracted via Claude Haiku 4.5.</div>
         </div>
-      </div>
-      <div class="af-connector"></div>
-      <div class="tier">
-        <div class="tier-lbl"><div class="tier-n">Tier 5</div><div class="tier-nm t5">Markets</div></div>
-        <div class="tier-body">
-          <div class="src-tags">
-            <span class="src">Yahoo Finance</span><span class="src">SPY/QQQ</span>
-            <span class="src">BTC/Gold/WTI</span><span class="src">VIX</span>
-            <span class="src new">Metals ★</span>
-          </div>
-          <div class="tier-desc">Live equities, crypto, energy, volatility, and now precious metals — the final cross-validation layer for geopolitical and economic signal interpretation.</div>
+        <div class="flow-step" style="--fs-c:var(--danger)">
+          <div class="flow-num">5</div>
+          <div class="flow-title">Alert & Push</div>
+          <div class="flow-desc">FLASH/PRIORITY/ROUTINE evaluated. Telegram/Discord alerts sent with progressive cooldown. All browsers updated via SSE. Cycle repeats in 15 minutes.</div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ════════════════ THEATER INTEL ════════════════ -->
-<section id="theater">
-  <div class="container">
-    <div class="sec-label reveal">Theater Intelligence <span class="new-badge">NEW</span></div>
-    <h2 class="sec-title reveal">Per-region intelligence.<br>Filtered, focused, actionable.</h2>
-    <p class="sec-sub reveal">Each theater page filters all 30 sources to a geographic region — showing only the air activity, narrative clusters, conflict events, and signals relevant to that zone. Click-through from the globe opens the brief inline.</p>
-
-    <div class="theater-grid">
-      <div class="th-card reveal">
-        <div class="th-header"><span style="font-size:22px">🌍</span><div class="th-region">Europe Theater</div></div>
-        <div class="th-body">ADS-B activity over Eastern Europe and the Black Sea, ACLED conflict events, Safecast radiation near Ukrainian nuclear sites, GDELT tone for EU-facing narratives, and Telegram OSINT channels focused on the European theater.</div>
-        <div class="th-tags">
-          <span class="th-tag">ADS-B</span><span class="th-tag">ACLED</span>
-          <span class="th-tag">Safecast</span><span class="th-tag">GDELT IO</span>
-        </div>
-      </div>
-      <div class="th-card reveal">
-        <div class="th-header"><span style="font-size:22px">🌏</span><div class="th-region">Asia-Pacific Theater</div></div>
-        <div class="th-body">Strait of Malacca and South China Sea maritime traffic via AIS, Taiwan Strait ADS-B coverage, CelesTrak satellite passes, GDELT sentiment from APAC media, and supply chain pressure from GSCPI tied to Pacific trade.</div>
-        <div class="th-tags">
-          <span class="th-tag">Maritime AIS</span><span class="th-tag">OpenSky</span>
-          <span class="th-tag">CelesTrak</span><span class="th-tag">GSCPI</span>
-        </div>
-      </div>
-      <div class="th-card reveal">
-        <div class="th-header"><span style="font-size:22px">🌐</span><div class="th-region">Middle East Theater</div></div>
-        <div class="th-body">Persian Gulf shipping lanes, energy price correlation (WTI/Brent), NASA FIRMS thermal activity, OFAC sanctions updates on Iranian entities, and GDELT conflict tone across Arabic-language media.</div>
-        <div class="th-tags">
-          <span class="th-tag">EIA</span><span class="th-tag">FIRMS</span>
-          <span class="th-tag">OFAC</span><span class="th-tag">ReliefWeb</span>
-        </div>
-      </div>
-      <div class="th-card reveal">
-        <div class="th-header"><span style="font-size:22px">🌎</span><div class="th-region">Americas Theater</div></div>
-        <div class="th-body">US domestic economic indicators from FRED and BLS, USAspending defense procurement signals, EPA RadNet domestic radiation, NOAA weather disruption, and Reddit/Bluesky sentiment from US-centric financial communities.</div>
-        <div class="th-tags">
-          <span class="th-tag">FRED</span><span class="th-tag">BLS</span>
-          <span class="th-tag">USAspending</span><span class="th-tag">EPA</span>
-        </div>
-      </div>
-      <div class="theater-wide reveal">
-        <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:16px">
-          <div style="font-size:26px">🧠</div>
-          <div>
-            <div style="font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:4px">Dominant Narratives — Powered by Claude Haiku 4.5</div>
-            <div style="font-size:12px;color:var(--dim)">IO narrative extraction layer</div>
-          </div>
-        </div>
-        <div style="font-size:13px;color:var(--dim);line-height:1.8">
-          Each Theater Intel page runs <strong style="color:var(--text)">GDELT IO + Telegram IO</strong> feeds through <strong style="color:var(--text)">Claude Haiku 4.5</strong> to extract Dominant Narratives — recurring themes, framing patterns, and coordinated messaging that indicate active information operations. The model clusters semantically similar content across sources and surfaces the top narrative threads per region, updating every sweep cycle.
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ════════════════ DATA SCIENCE DEPTH ════════════════ -->
+<!-- ════════════════════════════ DATA SCIENCE DEPTH ════════════════════════════ -->
 <section id="depth">
   <div class="container">
     <div class="sec-label reveal">Engineering Depth</div>
     <h2 class="sec-title reveal">The data science under the hood.</h2>
-    <p class="sec-sub reveal">Semantic deduplication, multi-domain correlation, confidence scoring, adaptive alert triage — built without a single external data-science library.</p>
-
     <div class="depth-grid">
 
       <div class="dc reveal">
         <div class="dc-head">
           <div class="dc-ico">⚡</div>
-          <div><div class="dc-t">Delta Engine</div><div class="dc-s">Change detection &amp; semantic deduplication</div></div>
+          <div><div class="dc-t">Delta Engine</div><div class="dc-s">Semantic change detection</div></div>
         </div>
         <div class="dc-body">
-          <strong>Numeric signals</strong>: VIX (±5%), yield spreads, WTI, Brent, NatGas, unemployment, mortgage rates, USD index. Last 5 observations stored for trend extraction.<br><br>
-          <strong>Count deltas</strong> with noise gates: thermal detections (±500), air activity (±50), conflict fatalities (±5).<br><br>
-          <strong>Semantic dedup</strong>: content-hashes Telegram posts, normalises numbers and timestamps — kills alert fatigue from cross-channel duplicates.
+          <strong>Numeric signals</strong>: VIX (±5%), yield spreads, WTI, Brent, NatGas, unemployment, mortgage rates. Last 5 observations stored for trend extraction.<br><br>
+          <strong>Count gates</strong>: thermal (±500), air activity (±50), conflict fatalities (±5) — noise suppression before escalation.<br><br>
+          <strong>Semantic dedup</strong>: content-hashes Telegram posts, normalises numbers and timestamps — eliminates cross-channel duplicates.
         </div>
-        <div class="code-block"><span class="cm">// Risk direction: weighted cross-domain score</span>
-<span class="kw">const</span> score = vixΔ * 2 + yieldΔ * 1.5 + urgentPosts * 0.8
-             + conflictΔ * 1.2 + thermalΔ * 0.3;
-direction = score > 0 ? <span class="str">'risk-off'</span> : score < 0 ? <span class="str">'risk-on'</span> : <span class="str">'mixed'</span>;</div>
+        <div class="code-block"><span class="cm">// Weighted cross-domain risk direction</span>
+<span class="kw">const</span> score = vixΔ*2 + yieldΔ*1.5
+             + urgentPosts*0.8 + conflictΔ*1.2;
+direction = score > 0 ? <span class="str">'risk-off'</span> : <span class="str">'risk-on'</span>;</div>
       </div>
 
       <div class="dc blue reveal">
         <div class="dc-head">
           <div class="dc-ico">🧠</div>
-          <div><div class="dc-t">LLM Integration</div><div class="dc-s">7 providers, raw fetch, no SDKs</div></div>
+          <div><div class="dc-t">LLM Integration</div><div class="dc-s">7 providers · raw fetch · no SDKs</div></div>
         </div>
         <div class="dc-body">
-          A unified provider abstraction on raw <code style="color:var(--accent2);font-family:var(--mono);font-size:11px">fetch()</code> — no vendor SDK, no lock-in. Single interface: <code style="color:var(--accent2);font-family:var(--mono);font-size:11px">complete(system, user, opts)</code>.<br><br>
-          Sweep data is <strong>compressed to ~8KB</strong> before dispatch — 22 FRED indicators, energy, geopolitical signals, thermal counts, deltas — fitting any context budget while maximising signal density.
+          Unified provider abstraction on raw <code style="color:var(--accent2);font-family:var(--mono);font-size:11px">fetch()</code> — no vendor lock-in. Single interface: <code style="color:var(--accent2);font-family:var(--mono);font-size:11px">complete(system, user)</code>.<br><br>
+          Data <strong>compressed to ~8KB</strong> before dispatch: 22 FRED indicators, energy prices, geopolitical signals, deltas — maximising signal density within any context budget.
         </div>
-        <div class="prov-grid">
-          <div class="prov"><em>⬛</em>Anthropic</div>
-          <div class="prov"><em>🟢</em>OpenAI</div>
-          <div class="prov"><em>🔷</em>Gemini</div>
-          <div class="prov"><em>🟣</em>Mistral</div>
-          <div class="prov"><em>🔵</em>OpenRouter</div>
-          <div class="prov"><em>⚡</em>Codex</div>
-          <div class="prov"><em>🌀</em>MiniMax</div>
+        <div class="pv-grid">
+          <a href="https://anthropic.com" target="_blank" rel="noopener" class="pv"><em>⬛</em>Anthropic</a>
+          <a href="https://openai.com" target="_blank" rel="noopener" class="pv"><em>🟢</em>OpenAI</a>
+          <a href="https://deepmind.google/gemini" target="_blank" rel="noopener" class="pv"><em>🔷</em>Gemini</a>
+          <a href="https://mistral.ai" target="_blank" rel="noopener" class="pv"><em>🟣</em>Mistral</a>
+          <a href="https://openrouter.ai" target="_blank" rel="noopener" class="pv"><em>🔵</em>OpenRouter</a>
+          <a href="https://platform.openai.com" target="_blank" rel="noopener" class="pv"><em>⚡</em>Codex</a>
+          <a href="https://www.minimaxi.com" target="_blank" rel="noopener" class="pv"><em>🌀</em>MiniMax</a>
         </div>
       </div>
 
       <div class="dc warn reveal">
         <div class="dc-head">
           <div class="dc-ico">💡</div>
-          <div><div class="dc-t">Trade Idea Generator</div><div class="dc-s">Cross-domain quantitative analysis</div></div>
+          <div><div class="dc-t">Trade Idea Generator</div><div class="dc-s">Cross-domain quant analysis</div></div>
         </div>
         <div class="dc-body">
-          5–8 actionable ideas per sweep: <strong>LONG / SHORT / HEDGE / WATCH / AVOID</strong> — with ticker, confidence, rationale, risk, and time horizon. Multi-source citations required.<br><br>
-          Rule-based fallback correlates: conflict-energy nexus, yield curve inversion, HY spread vs VIX divergence, GSCPI + PPI pipeline, and defense procurement signals.
+          5–8 actionable ideas per sweep: <strong>LONG / SHORT / HEDGE / WATCH / AVOID</strong> — ticker, confidence, rationale, risk, horizon, multi-source citations.<br><br>
+          Rule-based fallback: conflict-energy nexus, yield curve inversion, HY spread vs VIX divergence, GSCPI + PPI pipeline, defense procurement signals.
         </div>
         <div class="code-block">{ <span class="str">"type"</span>: <span class="str">"HEDGE"</span>, <span class="str">"ticker"</span>: <span class="str">"UCO"</span>,
   <span class="str">"confidence"</span>: <span class="str">"HIGH"</span>, <span class="str">"horizon"</span>: <span class="str">"Days"</span>,
   <span class="str">"signals"</span>: [<span class="str">"ACLED +340 fatalities"</span>,
-              <span class="str">"WTI +4.2%"</span>, <span class="str">"AIS dark ships +12"</span>] }</div>
+    <span class="str">"WTI +4.2%"</span>, <span class="str">"AIS dark ships +12"</span>] }</div>
       </div>
 
       <div class="dc reveal">
         <div class="dc-head">
           <div class="dc-ico">🚨</div>
-          <div><div class="dc-t">Alert Triage</div><div class="dc-s">Adaptive cooldown &amp; multi-tier escalation</div></div>
+          <div><div class="dc-t">Alert Triage</div><div class="dc-s">Adaptive cooldown · multi-tier escalation</div></div>
         </div>
         <div class="dc-body">
-          Three tiers with <strong>progressive cooldown decay</strong>: 1st (0h) → 2nd within 24h (6h) → 3rd (12h) → 4th+ (24h). FLASH requires multi-domain confirmation — no single-source false triggers.
+          Progressive cooldown decay: 1st occurrence (0h) → 2nd within 24h (6h) → 3rd (12h) → 4th+ (24h). <strong>FLASH requires multi-domain confirmation</strong> — single-source spikes never trigger critical alerts.
         </div>
         <div class="at-row">
-          <div class="at flash"><div class="at-d"></div>FLASH — Multi-domain confirmed</div>
-          <div class="at prio"><div class="at-d"></div>PRIORITY — 2–3 confirming signals</div>
-          <div class="at rtn"><div class="at-d"></div>ROUTINE — Standard sweep update</div>
+          <div class="at fl"><div class="at-d"></div>FLASH — Multi-domain confirmed</div>
+          <div class="at pr"><div class="at-d"></div>PRIORITY — 2–3 confirming signals</div>
+          <div class="at rt"><div class="at-d"></div>ROUTINE — Standard update</div>
         </div>
       </div>
 
       <div class="dc purple wide reveal">
         <div class="dc-head">
           <div class="dc-ico">🗄️</div>
-          <div><div class="dc-t">Memory System</div><div class="dc-s">Hot/cold storage with atomic writes and crash recovery</div></div>
+          <div><div class="dc-t">Memory System</div><div class="dc-s">Hot/cold storage · atomic writes · crash recovery</div></div>
         </div>
         <div class="dc-body">
-          <strong>Hot memory</strong> holds 3 sweep runs in-memory, written atomically (temp → backup → rename) to prevent corruption. <strong>Cold storage</strong> archives daily JSON snapshots for historical pattern matching. The delta engine compares against this timeline to detect escalation trends — not just point-in-time spikes. Confidence scoring rewards <strong>cross-domain corroboration</strong>: a yield spread move confirmed by VIX, urgent OSINT posts, and a concurrent conflict event scores far higher than an isolated spike.
+          <strong>Hot memory</strong>: 3 sweep runs in-memory, written atomically (temp → backup → rename). <strong>Cold storage</strong>: daily JSON archives for historical pattern matching. Confidence scoring rewards <strong>cross-domain corroboration</strong> — a yield move confirmed by VIX + OSINT + conflict scores far higher than an isolated spike.
         </div>
-        <div class="mem-flow">
+        <div class="mem-row">
           <div class="mn"><span>Run N-2</span>Cold Archive</div>
           <div class="ma">→</div>
           <div class="mn"><span>Run N-1</span>Hot Memory</div>
@@ -815,227 +810,301 @@ direction = score > 0 ? <span class="str">'risk-off'</span> : score < 0 ? <span 
   </div>
 </section>
 
-<!-- ════════════════ ARSENAL ════════════════ -->
-<section id="arsenal">
+<!-- ════════════════════════════ THEATER INTEL ════════════════════════════ -->
+<section id="theater">
   <div class="container">
-    <div class="sec-label reveal">Technical Stack</div>
-    <h2 class="sec-title reveal">One prod dependency.<br>Everything else is native or CDN.</h2>
-    <p class="sec-sub reveal">Express.js is the only runtime dependency. No ORMs, no build tools, no framework overhead — pure ESM, raw API calls, and browser-native rendering libraries.</p>
-    <div class="skill-grid">
-      <div class="sk reveal"><div class="sk-icon">🟨</div><div class="sk-name">Node.js ESM</div><div class="sk-desc">Pure ES modules throughout. Native import/export, no transpilation.</div><div class="sk-bar"><div class="sk-fill" data-w="95"></div></div></div>
-      <div class="sk reveal"><div class="sk-icon">🌐</div><div class="sk-name">Three.js / WebGL</div><div class="sk-desc">3D globe, atmosphere glow, animated arcs, particle systems.</div><div class="sk-bar"><div class="sk-fill" data-w="88"></div></div></div>
-      <div class="sk reveal"><div class="sk-icon">📊</div><div class="sk-name">D3.js v7</div><div class="sk-desc">Cartographic projections, SVG maps, geo-tagged marker placement.</div><div class="sk-bar"><div class="sk-fill" data-w="85"></div></div></div>
-      <div class="sk reveal"><div class="sk-icon">✨</div><div class="sk-name">GSAP 3.12</div><div class="sk-desc">Cinematic boot sequence, scroll reveals, stagger animations.</div><div class="sk-bar"><div class="sk-fill" data-w="90"></div></div></div>
-      <div class="sk reveal"><div class="sk-icon">⚡</div><div class="sk-name">Server-Sent Events</div><div class="sk-desc">Real-time push to all dashboards — no polling, no WebSocket.</div><div class="sk-bar"><div class="sk-fill" data-w="93"></div></div></div>
-      <div class="sk reveal"><div class="sk-icon">🤖</div><div class="sk-name">LLM APIs (7)</div><div class="sk-desc">Raw fetch() — no vendor SDKs. Full auth and response control.</div><div class="sk-bar"><div class="sk-fill" data-w="94"></div></div></div>
-      <div class="sk reveal"><div class="sk-icon">🐳</div><div class="sk-name">Docker</div><div class="sk-desc">Volume-mounted runs/. Single docker compose up to deploy.</div><div class="sk-bar"><div class="sk-fill" data-w="80"></div></div></div>
-      <div class="sk reveal"><div class="sk-icon">🚀</div><div class="sk-name">Railway</div><div class="sk-desc">Four live deployments. Auto-deploy from GitHub, zero config.</div><div class="sk-bar"><div class="sk-fill" data-w="85"></div></div></div>
-      <div class="sk reveal"><div class="sk-icon">📱</div><div class="sk-name">Telegram / Discord</div><div class="sk-desc">Two-way bots — /brief /sweep /status /mute from your phone.</div><div class="sk-bar"><div class="sk-fill" data-w="88"></div></div></div>
-      <div class="sk reveal"><div class="sk-icon">🛰️</div><div class="sk-name">REST APIs (30)</div><div class="sk-desc">Custom safeFetch() — timeouts, retries, auto-JSON, graceful degradation.</div><div class="sk-bar"><div class="sk-fill" data-w="96"></div></div></div>
-      <div class="sk reveal"><div class="sk-icon">🔬</div><div class="sk-name">Diagnostics API</div><div class="sk-desc">/api/diagnostic, /api/sources, /api/debug/fred — full per-source health visibility.</div><div class="sk-bar"><div class="sk-fill" data-w="87"></div></div></div>
-      <div class="sk reveal"><div class="sk-icon">🧩</div><div class="sk-name">Claude Haiku 4.5</div><div class="sk-desc">Dominant Narratives extraction — IO intelligence at sweep speed.</div><div class="sk-bar"><div class="sk-fill" data-w="92"></div></div></div>
+    <div class="sec-label reveal">Theater Intelligence <span class="new-badge">NEW</span></div>
+    <h2 class="sec-title reveal">Per-region filtered intelligence.<br>Focused. Actionable. Live.</h2>
+    <p class="sec-sub reveal">Each theater page filters all 30 sources to a geographic region — air activity, narratives, conflict events, and signals relevant to that zone only. Globe click-through opens the brief inline.</p>
+    <div class="theater-grid">
+      <div class="th reveal">
+        <div class="th-hd"><span class="th-flag">🌍</span><div class="th-region">Europe Theater</div></div>
+        <div class="th-body">ADS-B over Eastern Europe and the Black Sea, ACLED conflict events, Safecast radiation near Ukrainian nuclear sites, GDELT tone for EU narratives, Telegram OSINT channels.</div>
+        <div class="th-tags"><span class="th-tag">ADS-B</span><span class="th-tag">ACLED</span><span class="th-tag">Safecast</span><span class="th-tag">GDELT IO</span><span class="th-tag">Telegram IO</span></div>
+      </div>
+      <div class="th reveal">
+        <div class="th-hd"><span class="th-flag">🌏</span><div class="th-region">Asia-Pacific Theater</div></div>
+        <div class="th-body">South China Sea maritime via AIS, Taiwan Strait ADS-B, CelesTrak satellite passes, GDELT APAC sentiment, GSCPI supply chain pressure.</div>
+        <div class="th-tags"><span class="th-tag">Maritime AIS</span><span class="th-tag">OpenSky</span><span class="th-tag">CelesTrak</span><span class="th-tag">GSCPI</span></div>
+      </div>
+      <div class="th reveal">
+        <div class="th-hd"><span class="th-flag">🌐</span><div class="th-region">Middle East Theater</div></div>
+        <div class="th-body">Persian Gulf shipping, energy price correlation (WTI/Brent), NASA FIRMS thermal activity, OFAC sanctions updates on Iranian entities, Arabic-language GDELT conflict tone.</div>
+        <div class="th-tags"><span class="th-tag">EIA</span><span class="th-tag">FIRMS</span><span class="th-tag">OFAC</span><span class="th-tag">ReliefWeb</span></div>
+      </div>
+      <div class="th reveal">
+        <div class="th-hd"><span class="th-flag">🌎</span><div class="th-region">Americas Theater</div></div>
+        <div class="th-body">US domestic FRED/BLS indicators, USAspending defense procurement signals, EPA RadNet domestic radiation, NOAA weather disruption, Reddit/Bluesky financial sentiment.</div>
+        <div class="th-tags"><span class="th-tag">FRED</span><span class="th-tag">BLS</span><span class="th-tag">USAspending</span><span class="th-tag">EPA</span></div>
+      </div>
+      <div class="narrative-callout reveal">
+        <div class="nc-label"><div class="dot"></div>Dominant Narratives — Claude Haiku 4.5</div>
+        <div class="nc-body">Each Theater Intel page runs <strong>GDELT IO + Telegram IO</strong> feeds through <strong>Claude Haiku 4.5</strong> to extract Dominant Narratives — recurring themes, framing patterns, and coordinated messaging that indicate active information operations. The model clusters semantically similar content across sources and surfaces the top narrative threads per region, updating every 15-minute sweep cycle. <a href="https://www.anthropic.com/claude/haiku" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">Claude Haiku 4.5 ↗</a></div>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- ════════════════ DEPLOYMENTS ════════════════ -->
-<section id="deploys">
+<!-- ════════════════════════════ DEPLOYMENTS ════════════════════════════ -->
+<section id="deploys" style="padding:100px 0">
   <div class="container">
     <div class="sec-label reveal">Live Infrastructure</div>
-    <h2 class="sec-title reveal">Four services. All green.</h2>
-    <div class="deploy-grid">
+    <h2 class="sec-title reveal">Four Railway deployments. All green.</h2>
+    <div class="dep-grid">
       <div class="dep reveal" style="--dep-c:var(--accent)">
         <div class="dep-status"><div class="dep-dot"></div><div class="dep-ok">SUCCESS</div></div>
         <div class="dep-name">DDN Terminal</div>
-        <div class="dep-desc">30-source intelligence engine with WebGL dashboard, Theater Intel pages, and IO narrative detection.</div>
-        <div class="dep-meta">crucix.live · Railway · Node 22</div>
+        <div class="dep-desc">30-source intelligence engine with WebGL dashboard, Theater Intel pages, IO narrative detection, and two-way bot integration.</div>
+        <div class="dep-meta"><a href="https://www.crucix.live" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">crucix.live ↗</a> · Railway · Node 22</div>
       </div>
       <div class="dep reveal" style="--dep-c:var(--accent2)">
         <div class="dep-status"><div class="dep-dot"></div><div class="dep-ok">SUCCESS</div></div>
         <div class="dep-name">DDN Quant Lab</div>
-        <div class="dep-desc">LLM-powered trade idea generation grounded in real sweep data. Deployed Sep 2026.</div>
-        <div class="dep-meta">ddn-quant-lab · Railway</div>
+        <div class="dep-desc">LLM-powered trade idea generation grounded in real sweep data. Cross-domain signal correlation for quantitative macro analysis.</div>
+        <div class="dep-meta">ddn-quant-lab · Railway · Deployed Sep 2026</div>
       </div>
       <div class="dep reveal" style="--dep-c:var(--purple)">
         <div class="dep-status"><div class="dep-dot"></div><div class="dep-ok">SUCCESS</div></div>
         <div class="dep-name">DDN Signal Store</div>
-        <div class="dep-desc">Persistent signal archive and historical pattern-matching across cold memory sweep archives.</div>
-        <div class="dep-meta">ddn-signal-store · Railway</div>
+        <div class="dep-desc">Persistent signal archive and historical pattern-matching across daily cold memory sweep archives.</div>
+        <div class="dep-meta">ddn-signal-store · Railway · Deployed Sep 2026</div>
       </div>
       <div class="dep reveal" style="--dep-c:var(--warn)">
         <div class="dep-status"><div class="dep-dot"></div><div class="dep-ok">SUCCESS</div></div>
         <div class="dep-name">OSINT War Room</div>
-        <div class="dep-desc">Dedicated conflict intelligence — ACLED, ReliefWeb, WHO, sanctions data in a single focused view.</div>
-        <div class="dep-meta">osint-war-room · Railway · Jun 2026</div>
+        <div class="dep-desc">Dedicated conflict intelligence — ACLED, ReliefWeb, WHO, sanctions data aggregated in one focused operational view.</div>
+        <div class="dep-meta">osint-war-room · Railway · Deployed Jun 2026</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ════════════════ LIVE DEMO ════════════════ -->
+<!-- ════════════════════════════ DEMO ════════════════════════════ -->
 <section id="demo">
   <div class="container">
     <div class="sec-label reveal">Live Terminal</div>
     <h2 class="sec-title reveal">See it running now.</h2>
-    <p class="sec-sub reveal">The live deployment is on Railway — 30 sources, fully operational, updating every 15 minutes.</p>
-    <div class="browser-wrap reveal">
+    <p class="sec-sub reveal">The live deployment runs on Railway — 30 sources, updating every 15 minutes. Or follow real-time signals on <a href="https://x.com/crucixmonitor" target="_blank" rel="noopener" style="color:var(--accent)">@crucixmonitor</a>.</p>
+    <div class="browser reveal">
       <div class="browser-bar">
         <div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div>
         <div class="b-url"><span>crucix.live</span> — DDN Intelligence Terminal</div>
       </div>
       <div class="iframe-wrap">
-        <iframe src="https://www.crucix.live" title="DDN Intelligence Terminal" loading="lazy"
+        <iframe src="https://www.crucix.live" title="DDN Live Terminal" loading="lazy"
           sandbox="allow-scripts allow-same-origin"
           onerror="this.nextElementSibling.style.display='block';this.style.display='none'"></iframe>
-        <div class="fallback">
-          <div class="fallback-msg">
-            <div style="font-family:var(--mono);font-size:13px;color:var(--accent);letter-spacing:0.1em">PREVIEW BLOCKED BY BROWSER</div>
-            <a href="https://www.crucix.live" target="_blank" rel="noopener" class="btn-primary" style="margin-top:8px">Open in New Tab →</a>
+        <div class="iframe-fallback">
+          <div class="fm">
+            <div style="font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:0.1em">PREVIEW BLOCKED BY BROWSER POLICY</div>
+            <a href="https://www.crucix.live" target="_blank" rel="noopener" class="btn-p" style="margin-top:8px;font-size:11px;padding:11px 26px">Open in New Tab ↗</a>
           </div>
         </div>
       </div>
     </div>
-    <div class="demo-btns reveal">
-      <a href="https://www.crucix.live" target="_blank" rel="noopener" class="btn-primary">Open Full Terminal</a>
-      <a href="https://github.com/stevenmcdermott-sys/crucix" target="_blank" rel="noopener" class="btn-outline">Deploy Your Own</a>
-      <a href="https://x.com/crucixmonitor" target="_blank" rel="noopener" class="btn-outline">@crucixmonitor on X</a>
+    <div class="demo-actions reveal">
+      <a href="https://www.crucix.live" target="_blank" rel="noopener" class="btn-p">Open Full Terminal ↗</a>
+      <a href="https://github.com/stevenmcdermott-sys/crucix" target="_blank" rel="noopener" class="btn-g">Deploy Your Own</a>
+      <a href="https://x.com/crucixmonitor" target="_blank" rel="noopener" class="btn-g">@crucixmonitor on X</a>
+      <a href="https://discord.gg/ChVy7SF4" target="_blank" rel="noopener" class="btn-g">Discord Community</a>
     </div>
   </div>
 </section>
 
-<!-- ════════════════ GITHUB ════════════════ -->
+<!-- ════════════════════════════ GITHUB ════════════════════════════ -->
 <section id="github">
   <div class="container">
     <div class="sec-label reveal">Open Source</div>
-    <div class="gh-wrap">
-      <div class="gh-card reveal">
-        <div class="gh-ico">⚡</div>
-        <div class="gh-title">DDN / CRUCIX</div>
-        <div class="gh-handle">github.com/stevenmcdermott-sys/crucix</div>
-        <div class="gh-desc">30 OSINT sources. 7 LLM providers. Theater Intelligence pages. IO narrative detection. WebGL dashboard. Telegram/Discord bots. Production-grade delta engine. One command to run.</div>
-        <div class="gh-nums">
-          <div class="gn"><span class="v">30</span><span class="l">Sources</span></div>
-          <div class="gn"><span class="v">58+</span><span class="l">Modules</span></div>
-          <div class="gn"><span class="v">4</span><span class="l">Deployments</span></div>
-        </div>
-        <div class="gh-tags">
-          <span class="gh-tag">osint</span><span class="gh-tag">intelligence</span>
-          <span class="gh-tag">data-science</span><span class="gh-tag">llm</span>
-          <span class="gh-tag">webgl</span><span class="gh-tag">theater-intel</span>
-          <span class="gh-tag">io-detection</span><span class="gh-tag">node.js</span>
-          <span class="gh-tag">railway</span><span class="gh-tag">agpl-3.0</span>
-        </div>
-        <div class="gh-btns">
-          <a href="https://github.com/stevenmcdermott-sys/crucix" target="_blank" rel="noopener" class="btn-primary">View Repository</a>
-          <a href="https://www.crucix.live" target="_blank" rel="noopener" class="btn-outline">Live Terminal</a>
-        </div>
+    <div class="gh-card reveal">
+      <div class="gh-ico">⚡</div>
+      <div class="gh-name">DDN / CRUCIX</div>
+      <div class="gh-handle">github.com / stevenmcdermott-sys / crucix</div>
+      <div class="gh-desc">30 OSINT sources. 7 LLM providers. Theater Intelligence. IO narrative detection. WebGL dashboard. Telegram/Discord bots. Production-grade delta engine. One command to run. AGPL-3.0.</div>
+      <div class="gh-nums">
+        <div class="gn"><span class="v">30</span><span class="l">Sources</span></div>
+        <div class="gn"><span class="v">58+</span><span class="l">Modules</span></div>
+        <div class="gn"><span class="v">4</span><span class="l">Deployments</span></div>
+      </div>
+      <div class="gh-tags">
+        <span class="gh-tag">osint</span><span class="gh-tag">intelligence</span><span class="gh-tag">data-science</span>
+        <span class="gh-tag">llm</span><span class="gh-tag">webgl</span><span class="gh-tag">theater-intel</span>
+        <span class="gh-tag">io-detection</span><span class="gh-tag">node.js</span>
+        <span class="gh-tag">railway</span><span class="gh-tag">agpl-3.0</span>
+      </div>
+      <div class="gh-btns">
+        <a href="https://github.com/stevenmcdermott-sys/crucix" target="_blank" rel="noopener" class="btn-p">View Repository</a>
+        <a href="https://www.crucix.live" target="_blank" rel="noopener" class="btn-g">Live Terminal</a>
+        <a href="https://github.com/stevenmcdermott-sys/crucix/blob/master/README.md" target="_blank" rel="noopener" class="btn-g">Documentation</a>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ════════════════ FOOTER ════════════════ -->
+<!-- ════════════════════════════ FOOTER ════════════════════════════ -->
 <footer>
   <div class="container">
-    <div class="foot-inner">
+    <div class="foot-grid">
       <div>
-        <div class="foot-brand">DDN<br><small>Data-Driven Intelligence Network · crucix.live<br>Zero cloud · Zero telemetry · AGPL-3.0</small></div>
+        <div class="foot-brand">DDN<br><small>Data-Driven Intelligence Network<br>crucix.live · Zero cloud · Zero telemetry<br>AGPL-3.0 Open Source</small></div>
       </div>
-      <div class="foot-links">
-        <a href="https://www.crucix.live" target="_blank" rel="noopener">Live Terminal</a>
-        <a href="https://github.com/stevenmcdermott-sys/crucix" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://x.com/crucixmonitor" target="_blank" rel="noopener">@crucixmonitor</a>
-        <a href="https://discord.gg/ChVy7SF4" target="_blank" rel="noopener">Discord</a>
+      <div>
+        <div class="foot-title">Platform</div>
+        <ul class="foot-links">
+          <li><a href="https://www.crucix.live" target="_blank" rel="noopener">Live Terminal ↗</a></li>
+          <li><a href="https://www.crucix.live/theater.html" target="_blank" rel="noopener">Theater Intel ↗</a></li>
+          <li><a href="https://www.crucix.live/api/health" target="_blank" rel="noopener">API Health ↗</a></li>
+          <li><a href="https://github.com/stevenmcdermott-sys/crucix" target="_blank" rel="noopener">GitHub ↗</a></li>
+        </ul>
       </div>
-      <div class="foot-links">
-        <a href="#arch">Architecture</a>
-        <a href="#theater">Theater Intel</a>
-        <a href="#depth">Data Science</a>
-        <a href="#arsenal">Stack</a>
+      <div>
+        <div class="foot-title">Community</div>
+        <ul class="foot-links">
+          <li><a href="https://x.com/crucixmonitor" target="_blank" rel="noopener">@crucixmonitor on X ↗</a></li>
+          <li><a href="https://discord.gg/ChVy7SF4" target="_blank" rel="noopener">Discord ↗</a></li>
+          <li><a href="https://github.com/stevenmcdermott-sys/crucix/blob/master/README.md" target="_blank" rel="noopener">Docs ↗</a></li>
+          <li><a href="https://github.com/stevenmcdermott-sys/crucix/blob/master/LICENSE" target="_blank" rel="noopener">AGPL-3.0 ↗</a></li>
+        </ul>
       </div>
     </div>
     <div class="foot-copy">
-      Licensed under <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a>
-      &nbsp;·&nbsp; Data sourced from public APIs &amp; open feeds
-      &nbsp;·&nbsp; Zero telemetry &nbsp;·&nbsp; Zero cloud
-      &nbsp;·&nbsp; Built with Node.js 22 + Express
+      Data sourced from public APIs &amp; open feeds — all citations linked above &nbsp;·&nbsp;
+      <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a> &nbsp;·&nbsp;
+      Zero telemetry &nbsp;·&nbsp; Zero cloud &nbsp;·&nbsp;
+      Built with Node.js 22 + Express
     </div>
   </div>
 </footer>
 
 <script>
-// ── THREE.JS HERO PARTICLES ──────────────────────────────────────────────────
-(function(){
-  const canvas = document.getElementById('hero-canvas');
-  const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const SOURCES = [
+  // TIER 1
+  {tier:'t1',icon:'📡',name:'GDELT',cat:'Global News & Events',
+   desc:'100+ language global news monitoring. Events, tone, geolocation. Updates every 15 minutes.',
+   url:'https://www.gdeltproject.org',key:'Free'},
+  {tier:'t1',icon:'✈️',name:'OpenSky Network',cat:'Real-time ADS-B',
+   desc:'Live flight tracking across 6 geopolitical hotspot regions. Civilian + partial military coverage.',
+   url:'https://opensky-network.org',key:'Free'},
+  {tier:'t1',icon:'🔥',name:'NASA FIRMS',cat:'Satellite Fire Detection',
+   desc:'Satellite thermal anomaly detection (MODIS + VIIRS). 3-hour latency. Global coverage.',
+   url:'https://firms.modaps.eosdis.nasa.gov',key:'Free API key'},
+  {tier:'t1',icon:'🚢',name:'AISstream Maritime',cat:'Vessel Tracking',
+   desc:'Real-time AIS ship tracking. Dark vessel detection, chokepoint monitoring, sanctions evasion signals.',
+   url:'https://aisstream.io',key:'Free API key'},
+  {tier:'t1',icon:'☢️',name:'Safecast',cat:'Radiation Monitoring',
+   desc:'Citizen-science radiation monitoring near 6 nuclear sites globally. Open hardware sensor network.',
+   url:'https://safecast.org',key:'Free'},
+  {tier:'t1',icon:'💥',name:'ACLED',cat:'Armed Conflict Events',
+   desc:'Battles, explosions, protests, strategic developments. 40+ years of conflict data. Near-real-time.',
+   url:'https://acleddata.com',key:'Free (OAuth2)'},
+  {tier:'t1',icon:'🏥',name:'ReliefWeb',cat:'UN Humanitarian',
+   desc:'UN humanitarian crisis tracking — disasters, disease outbreaks, displacement, aid response.',
+   url:'https://reliefweb.int',key:'Free'},
+  {tier:'t1',icon:'🦠',name:'WHO',cat:'Health Emergencies',
+   desc:'Disease outbreaks and global health emergencies. Direct WHO API integration.',
+   url:'https://www.who.int',key:'Free'},
+  {tier:'t1',icon:'🏛️',name:'OFAC SDN',cat:'US Sanctions',
+   desc:'US Treasury Office of Foreign Assets Control — Specially Designated Nationals list.',
+   url:'https://ofac.treasury.gov',key:'Free'},
+  {tier:'t1',icon:'⚖️',name:'OpenSanctions',cat:'Global Sanctions',
+   desc:'Aggregated global sanctions from 30+ sources. PEPs, criminal, financial crime entities.',
+   url:'https://opensanctions.org',key:'Partial free'},
+  {tier:'t1',icon:'🛩️',name:'ADS-B Exchange',cat:'Unfiltered ADS-B',
+   desc:'Unfiltered flight tracking including military, government, and sensitive aircraft.',
+   url:'https://www.adsbexchange.com',key:'Paid (~$10/mo)'},
+  {tier:'t1',icon:'📰',name:'GDELT IO',cat:'IO Narrative Monitor',isNew:true,
+   desc:'Multilingual narrative monitoring for information operations. UK-focused framing and coordination detection.',
+   url:'https://www.gdeltproject.org',key:'Free'},
+  {tier:'t1',icon:'📲',name:'Telegram IO',cat:'IO Channel Monitor',isNew:true,
+   desc:'Tracks information operations channels via RSSHub. No Telegram API key required.',
+   url:'https://telegram.org',key:'Free (RSSHub)'},
+  // TIER 2
+  {tier:'t2',icon:'📊',name:'FRED',cat:'Federal Reserve Data',
+   desc:'22 macro indicators: VIX, yield curve (10Y-2Y, 10Y-3M), CPI, M2, fed funds, mortgage rates.',
+   url:'https://fred.stlouisfed.org',key:'Free API key'},
+  {tier:'t2',icon:'🏦',name:'US Treasury',cat:'Fiscal & Debt Data',
+   desc:'National debt, Treasury yields, fiscal data. Direct TreasuryDirect API.',
+   url:'https://home.treasury.gov',key:'Free'},
+  {tier:'t2',icon:'👷',name:'BLS',cat:'Labor Market',
+   desc:'Nonfarm payrolls, CPI, PPI, unemployment rate, JOLTS — Bureau of Labor Statistics.',
+   url:'https://www.bls.gov',key:'Free API key'},
+  {tier:'t2',icon:'⛽',name:'EIA Energy',cat:'Energy Markets',
+   desc:'WTI crude, Brent crude, natural gas prices, petroleum inventories. US Energy Information Administration.',
+   url:'https://www.eia.gov',key:'Free API key'},
+  {tier:'t2',icon:'🔗',name:'NY Fed GSCPI',cat:'Supply Chain',
+   desc:'Global Supply Chain Pressure Index — composite of shipping, airfreight, manufacturing PMIs.',
+   url:'https://www.newyorkfed.org/research/policy/gscpi',key:'Free'},
+  {tier:'t2',icon:'💰',name:'USAspending',cat:'Federal Spending',
+   desc:'US federal spending and defense contracts. Tracks procurement signals as geopolitical indicators.',
+   url:'https://www.usaspending.gov',key:'Free'},
+  {tier:'t2',icon:'🌍',name:'UN Comtrade',cat:'Trade Flows',
+   desc:'Strategic commodity trade flows — semiconductors, rare earths, energy. UN international trade database.',
+   url:'https://comtradeplus.un.org',key:'Free (limited)'},
+  // TIER 3
+  {tier:'t3',icon:'🌪️',name:'NOAA / NWS',cat:'Weather Alerts',
+   desc:'US National Weather Service alerts. Severe weather, hurricanes, floods as infrastructure risk signals.',
+   url:'https://www.weather.gov',key:'Free'},
+  {tier:'t3',icon:'☢️',name:'EPA RadNet',cat:'US Radiation',
+   desc:'US Environmental Protection Agency radiation monitoring network. Domestic nuclear anomaly detection.',
+   url:'https://www.epa.gov/radnet',key:'Free'},
+  {tier:'t3',icon:'🔬',name:'USPTO Patents',cat:'Technology Intelligence',
+   desc:'Patent filings in 7 strategic tech areas: AI, quantum, semiconductors, biotech, energy, space, cyber.',
+   url:'https://patents.google.com',key:'Free'},
+  {tier:'t3',icon:'🦋',name:'Bluesky',cat:'Social Sentiment',
+   desc:'Geopolitical and market sentiment from Bluesky. Open social graph, no API restrictions.',
+   url:'https://bsky.social',key:'Free'},
+  {tier:'t3',icon:'👽',name:'Reddit',cat:'Social Sentiment',
+   desc:'Sentiment from key OSINT, geopolitics, finance, and markets subreddits.',
+   url:'https://www.reddit.com',key:'Free API'},
+  {tier:'t3',icon:'📡',name:'Telegram (17ch)',cat:'OSINT Channels',
+   desc:'17 curated OSINT, conflict, and finance Telegram channels. Web scraping + RSSHub.',
+   url:'https://telegram.org',key:'Free'},
+  {tier:'t3',icon:'📻',name:'KiwiSDR',cat:'HF Radio Network',
+   desc:'~600 global HF radio receivers. SIGINT signal landscape monitoring.',
+   url:'http://kiwisdr.com',key:'Free'},
+  {tier:'t3',icon:'🔒',name:'CISA KEV',cat:'Cyber Intelligence',isNew:true,
+   desc:'CISA Known Exploited Vulnerabilities catalog. Actively exploited CVEs as cyber-geopolitical signals.',
+   url:'https://www.cisa.gov/known-exploited-vulnerabilities-catalog',key:'Free'},
+  // TIER 4
+  {tier:'t4',icon:'🛰️',name:'CelesTrak',cat:'Satellite Tracking',
+   desc:'Satellite launches, ISS position, military constellations (GPS/GLONASS/Galileo/BeiDou), Starlink/OneWeb counts.',
+   url:'https://celestrak.org',key:'Free'},
+  // TIER 5
+  {tier:'t5',icon:'📈',name:'Yahoo Finance',cat:'Live Markets',
+   desc:'Real-time prices: SPY, QQQ, BTC, Gold, WTI, VIX, and metals. Cross-validation for geopolitical signals.',
+   url:'https://finance.yahoo.com',key:'Free (scrape)'},
+];
 
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 1000);
-  camera.position.z = 85;
+const TICKER_ITEMS = SOURCES.map(s =>
+  `<a href="${s.url}" target="_blank" rel="noopener" class="tick-item"><span class="ti">${s.icon}</span>${s.name}</a>`
+).join('');
+const track = document.getElementById('ticker-track');
+track.innerHTML = TICKER_ITEMS + TICKER_ITEMS; // double for seamless loop
 
-  const N = 2400;
-  const pos = new Float32Array(N * 3);
-  const col = new Float32Array(N * 3);
-  const c1 = new THREE.Color(0x64f0c8), c2 = new THREE.Color(0x44ccff),
-        c3 = new THREE.Color(0x112828);
+// ── SOURCE GRID ───────────────────────────────────────────────────────────────
+function renderSources(filter='all'){
+  const grid = document.getElementById('src-grid');
+  const filtered = filter === 'all' ? SOURCES : SOURCES.filter(s => s.tier === filter);
+  grid.innerHTML = filtered.map(s => `
+    <a href="${s.url}" target="_blank" rel="noopener" class="src-card ${s.tier}">
+      <span class="src-icon">${s.icon}</span>
+      <div class="src-name">${s.name}${s.isNew ? '<span class="new-badge">NEW</span>' : ''}</div>
+      <div class="src-cat">${s.cat}</div>
+      <div class="src-desc">${s.desc}</div>
+      <div class="src-url">${s.url.replace('https://','').replace('http://','')} · ${s.key}</div>
+    </a>`).join('');
+}
+renderSources();
 
-  for(let i = 0; i < N; i++){
-    pos[i*3]   = (Math.random() - 0.5) * 280;
-    pos[i*3+1] = (Math.random() - 0.5) * 280;
-    pos[i*3+2] = (Math.random() - 0.5) * 160;
-    const t = Math.random();
-    const c = t < 0.25 ? c1 : t < 0.42 ? c2 : c3;
-    col[i*3] = c.r; col[i*3+1] = c.g; col[i*3+2] = c.b;
-  }
+document.getElementById('tier-nav').addEventListener('click', e => {
+  const btn = e.target.closest('.tier-btn');
+  if(!btn) return;
+  document.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSources(btn.dataset.tier);
+});
 
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  const mat = new THREE.PointsMaterial({size:0.85, vertexColors:true, transparent:true, opacity:0.72});
-  const pts = new THREE.Points(geo, mat);
-  scene.add(pts);
-
-  // sparse connection lines
-  const lp = [];
-  for(let i = 0; i < 90; i++){
-    const a = Math.floor(Math.random()*N), b = Math.floor(Math.random()*N);
-    if(Math.hypot(pos[a*3]-pos[b*3], pos[a*3+1]-pos[b*3+1]) < 38){
-      lp.push(pos[a*3],pos[a*3+1],pos[a*3+2], pos[b*3],pos[b*3+1],pos[b*3+2]);
-    }
-  }
-  const lg = new THREE.BufferGeometry();
-  lg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(lp), 3));
-  scene.add(new THREE.LineSegments(lg,
-    new THREE.LineBasicMaterial({color:0x64f0c8, transparent:true, opacity:0.07})));
-
-  let mx = 0, my = 0;
-  document.addEventListener('mousemove', e => {
-    mx = (e.clientX / innerWidth - 0.5) * 2;
-    my = -(e.clientY / innerHeight - 0.5) * 2;
-  });
-
-  function resize(){
-    const w = canvas.offsetWidth, h = canvas.offsetHeight;
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-  }
-  resize();
-  addEventListener('resize', resize);
-
-  let t = 0;
-  (function frame(){
-    requestAnimationFrame(frame);
-    t += 0.004;
-    pts.rotation.y = t * 0.045 + mx * 0.07;
-    pts.rotation.x = my * 0.045;
-    mat.opacity = 0.52 + Math.sin(t * 0.8) * 0.1;
-    renderer.render(scene, camera);
-  })();
-})();
-
-// ── TYPEWRITER ───────────────────────────────────────────────────────────────
+// ── TYPEWRITER ────────────────────────────────────────────────────────────────
 (function(){
   const el = document.getElementById('tw');
   const phrases = [
@@ -1044,59 +1113,40 @@ direction = score > 0 ? <span class="str">'risk-off'</span> : score < 0 ? <span 
     'IO narrative detection via Claude Haiku.',
     'From satellite fire to trade idea in 15 min.',
     'Self-hosted. No subscriptions. Your data.',
-    'Four Railway deployments. All green.'
+    '4 Railway deployments. All green.'
   ];
-  let pi = 0, ci = 0, del = false;
+  let pi=0,ci=0,del=false;
   function tick(){
-    const p = phrases[pi];
-    if(!del){ el.textContent = p.slice(0, ++ci); if(ci === p.length){ del = true; setTimeout(tick, 2000); return; } }
-    else { el.textContent = p.slice(0, --ci); if(ci === 0){ del = false; pi = (pi+1) % phrases.length; setTimeout(tick, 350); return; } }
-    setTimeout(tick, del ? 32 : 60);
+    const p=phrases[pi];
+    if(!del){el.textContent=p.slice(0,++ci);if(ci===p.length){del=true;setTimeout(tick,2200);return;}}
+    else{el.textContent=p.slice(0,--ci);if(ci===0){del=false;pi=(pi+1)%phrases.length;setTimeout(tick,380);return;}}
+    setTimeout(tick,del?30:58);
   }
   tick();
 })();
 
-// ── GSAP SCROLL ──────────────────────────────────────────────────────────────
+// ── GSAP ──────────────────────────────────────────────────────────────────────
 gsap.registerPlugin(ScrollTrigger);
-
-gsap.utils.toArray('.reveal').forEach(el => {
-  gsap.fromTo(el, {opacity:0, y:30}, {
-    opacity:1, y:0, duration:0.8, ease:'power3.out',
-    scrollTrigger:{trigger:el, start:'top 89%', toggleActions:'play none none none'}
-  });
-});
-
-// stat counters
-document.querySelectorAll('.stat-n[data-t]').forEach(el => {
-  const target = +el.dataset.t, suffix = el.dataset.s || '';
-  ScrollTrigger.create({trigger:el, start:'top 85%', once:true,
-    onEnter(){ gsap.fromTo({v:0},{v:target},{
-      duration:1.7, ease:'power2.out',
-      onUpdate(){ el.textContent = Math.round(this.targets()[0].v) + suffix; }
-    }); }
-  });
-});
-
-// skill bars
-document.querySelectorAll('.sk-fill[data-w]').forEach(bar => {
-  ScrollTrigger.create({trigger:bar, start:'top 90%', once:true,
-    onEnter(){ bar.style.width = bar.dataset.w + '%'; }
+gsap.utils.toArray('.reveal').forEach(el=>{
+  gsap.fromTo(el,{opacity:0,y:24},{
+    opacity:1,y:0,duration:0.8,ease:'power3.out',
+    scrollTrigger:{trigger:el,start:'top 89%',toggleActions:'play none none none'}
   });
 });
 
 // hero entrance
-gsap.fromTo('.hero-kicker', {opacity:0,y:18},{opacity:1,y:0,duration:0.9,delay:0.3,ease:'power3.out'});
-gsap.fromTo('.hero-title',  {opacity:0,y:30},{opacity:1,y:0,duration:0.9,delay:0.55,ease:'power3.out'});
-gsap.fromTo('.hero-type',   {opacity:0},     {opacity:1,duration:0.7,delay:0.95,ease:'power2.out'});
-gsap.fromTo('.hero-ctas',   {opacity:0,y:14},{opacity:1,y:0,duration:0.8,delay:1.2,ease:'power3.out'});
-gsap.fromTo('.hero-scroll', {opacity:0},     {opacity:1,duration:0.8,delay:1.7});
+gsap.fromTo('.hero-kicker',{opacity:0,y:16},{opacity:1,y:0,duration:0.9,delay:0.3,ease:'power3.out'});
+gsap.fromTo('h1',{opacity:0,y:28},{opacity:1,y:0,duration:0.9,delay:0.55,ease:'power3.out'});
+gsap.fromTo('.hero-sub',{opacity:0},{opacity:1,duration:0.7,delay:0.95});
+gsap.fromTo('.hero-btns',{opacity:0,y:14},{opacity:1,y:0,duration:0.8,delay:1.2,ease:'power3.out'});
+gsap.fromTo('.hero-stats',{opacity:0,y:10},{opacity:1,y:0,duration:0.8,delay:1.5,ease:'power2.out'});
 
-// ── LIGHTBOX ─────────────────────────────────────────────────────────────────
-function lb(src){ document.getElementById('lb-img').src = src; document.getElementById('lb').classList.add('open'); }
-document.getElementById('lb').addEventListener('click', function(e){
-  if(e.target === this || e.target.id === 'lb-close') this.classList.remove('open');
+// ── LIGHTBOX ──────────────────────────────────────────────────────────────────
+function openLb(src){document.getElementById('lb-img').src=src;document.getElementById('lb').classList.add('open');}
+document.getElementById('lb').addEventListener('click',function(e){
+  if(e.target===this||e.target.id==='lb-close') this.classList.remove('open');
 });
-document.addEventListener('keydown', e => { if(e.key === 'Escape') document.getElementById('lb').classList.remove('open'); });
+document.addEventListener('keydown',e=>{if(e.key==='Escape') document.getElementById('lb').classList.remove('open');});
 </script>
 </body>
 </html>
